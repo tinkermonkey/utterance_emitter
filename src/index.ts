@@ -1,5 +1,5 @@
 import * as lamejs from '@breezystack/lamejs';
-import { EmitterConfig, defaultEmitterConfig, EmitterCanvas, Utterance } from "./types"
+import { EmitterConfig, defaultEmitterConfig, EmitterCanvas, Utterance, SpeakingEvent } from "./types"
 import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
 
@@ -213,6 +213,22 @@ class UtteranceEmitter extends EventEmitter {
 
     // Store the speaking signal
     const speakingSignal = this.aboveThreshold ? 1 : 0
+    
+    // If the speaking state has changed from 0 to 1, emit the speaking event
+    if (speakingSignal === 1 && this.speakingSignalData[this.speakingSignalData.length - 1] === 0) {
+      const event: SpeakingEvent = {
+        speaking: true,
+        timestamp: Date.now()
+      };
+      this.emit('speaking', event);
+    } else if (speakingSignal === 0 && this.speakingSignalData[this.speakingSignalData.length - 1] === 1) {
+      const event: SpeakingEvent = {
+        speaking: false,
+        timestamp: Date.now()
+      };
+      this.emit('speaking', event);
+    }
+
     if (this.speakingSignalData.length >= this.maxSignalPoints) {
       this.speakingSignalData.shift()
     }

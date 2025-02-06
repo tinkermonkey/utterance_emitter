@@ -48,6 +48,11 @@ export interface EmitterCanvas {
 /**
  * Types for the EventEmitter type and interface.
  */
+export interface SpeakingEvent {
+  speaking: boolean;
+  timestamp: number;
+}
+
 export type EventCallback = (...args: any[]) => void;
 export interface EventListeners {
   [event: string]: EventCallback[];
