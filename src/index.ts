@@ -13,7 +13,7 @@ class UtteranceEmitter extends EventEmitter {
   preRecordingMediaRecorder?: MediaRecorder
   volumeThreshold: number = 7
   audioChunks: Float32Array[] = []
-  preRecordingChunks: Blob[] = []
+  preRecordingChunks: Float32Array[] = []
   volumeData: number[] = []
   thresholdSignalData: number[] = []
   speakingSignalData: number[] = []
@@ -155,6 +155,7 @@ class UtteranceEmitter extends EventEmitter {
 
     // Accumulate pre-recording chunks
     this.preRecordingMediaRecorder.ondataavailable = (event) => {
+      // @ts-ignore
       this.preRecordingChunks.push(event.data);
       
       // Keep only the most recent chunks based on preRecordingDuration
@@ -174,7 +175,6 @@ class UtteranceEmitter extends EventEmitter {
       this.processUtterance()
     }
 
-    //this.mediaRecorder.start()
     this.processAudio()
     if (this.config.charts?.waveform) {
       this.drawWaveform()
@@ -254,16 +254,6 @@ class UtteranceEmitter extends EventEmitter {
       this.speakingSignalData.shift()
     }
     this.speakingSignalData.push(speakingSignal)
-
-    // Manage pre-recording buffer
-    if (
-      this.preRecordingBuffer.length >=
-      (this.config.preRecordingDuration || 100) / 16.67
-    ) {
-      this.preRecordingBuffer.shift()
-    }
-    // TODO: fix this, it inserts garbage data, this needs to be the audio data from the stream
-    //this.preRecordingBuffer.push(filteredSignal);
 
     // Start or stop recording based on filtered signal
     if (speakingSignal && this.mediaRecorder?.state === "inactive") {
