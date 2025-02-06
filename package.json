@@ -1,5 +1,5 @@
 {
-  "name": "utterance-emitter",
+  "name": "@tinkermonkey/utterance-emitter",
   "private": true,
   "version": "0.1.0",
   "type": "module",

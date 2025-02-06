@@ -1,6 +1,8 @@
 # Utterance Emitter
 
 ![CI](https://github.com/tinkermonkey/utterance_emitter/actions/workflows/ci.yml/badge.svg)
+[![Known Vulnerabilities](https://snyk.io/test/github/tinkermonkey/utterance_emitter/badge.svg)](https://snyk.io/test/github/tinkermonkey/utterance_emitter)
+[![npm version](https://badge.fury.io/js/utterance-emitter.svg)](https://badge.fury.io/js/utterance-emitter)
 
 Utterance Emitter is a Node.js library for recording audio in a browser, performing speaker detection, and emitting chunks of mp3 encoded audio representing utterances for further processing.
 
