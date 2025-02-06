@@ -3,8 +3,8 @@ import { EmitterConfig, defaultEmitterConfig, EmitterCanvas, Utterance, Speaking
 import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
 
-const defaultSignalLength = 100
-const CHUNK_DURATION = 100 // Duration in milliseconds for each audio chunk
+const DEFAULT_SIGNAL_LENGTH = 100
+const PRERECORDING_CHUNK_DURATION = 100 // Duration in milliseconds for each audio chunk
 
 class UtteranceEmitter extends EventEmitter {
   config: EmitterConfig
@@ -18,7 +18,7 @@ class UtteranceEmitter extends EventEmitter {
   volumeData: number[] = []
   thresholdSignalData: number[] = []
   speakingSignalData: number[] = []
-  maxSignalPoints: number = defaultSignalLength
+  maxSignalPoints: number = DEFAULT_SIGNAL_LENGTH
   aboveThreshold: boolean = false
   belowThresholdDuration: number = 0
   preRecordingDuration?: number
@@ -135,7 +135,7 @@ class UtteranceEmitter extends EventEmitter {
     // Set the bar width on the charts and max data points
     if (this.config.charts) {
       const chartWidth = this.config.charts.width || 400
-      this.barWidth = (chartWidth / (this.analysers.frequency?.bufferLength || defaultSignalLength)) * (this.config.charts.barWidthNominal || 2.5);
+      this.barWidth = (chartWidth / (this.analysers.frequency?.bufferLength || DEFAULT_SIGNAL_LENGTH)) * (this.config.charts.barWidthNominal || 2.5);
       this.barMargin = this.config.charts.barMargin || 1
 
       this.maxSignalPoints = Math.ceil(chartWidth / (this.barWidth + this.barMargin))
@@ -160,7 +160,7 @@ class UtteranceEmitter extends EventEmitter {
       this.preRecordingChunks.push(event.data);
       
       // Keep only the most recent chunks based on preRecordingDuration
-      const maxChunks = Math.ceil((this.config.preRecordingDuration || 100) / CHUNK_DURATION);
+      const maxChunks = Math.ceil((this.config.preRecordingDuration || 100) / PRERECORDING_CHUNK_DURATION);
       
       while (this.preRecordingChunks.length > maxChunks) {
         this.preRecordingChunks.shift();
@@ -168,7 +168,7 @@ class UtteranceEmitter extends EventEmitter {
     };
 
     // Start the pre-recording buffer recorder with a timeslice of 100ms
-    this.preRecordingMediaRecorder.start(CHUNK_DURATION);
+    this.preRecordingMediaRecorder.start(PRERECORDING_CHUNK_DURATION);
 
     // Once the recording is signaled to stop because the filtered isSpeaking signal drops to zero, process the audio
     this.mediaRecorder.onstop = () => {
