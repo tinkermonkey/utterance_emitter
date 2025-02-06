@@ -192,7 +192,7 @@ class UtteranceEmitter {
     this.volumeData.push(average)
 
     // Store the threshold signal
-    const thresholdSignal = average > this.volumeThreshold ? 255 : 0
+    const thresholdSignal = average > this.volumeThreshold ? 1 : 0
     if (this.thresholdSignalData.length >= this.maxSignalPoints) {
       this.thresholdSignalData.shift()
     }
@@ -204,13 +204,13 @@ class UtteranceEmitter {
       this.belowThresholdDuration = 0
     } else {
       this.belowThresholdDuration += 16.67 // Approximate duration of one frame at 60 FPS
-      if (this.belowThresholdDuration >= 500) {
+      if (this.belowThresholdDuration >= (this.config.filterDuration || 500)) {
         this.aboveThreshold = false
       }
     }
 
     // Store the speaking signal
-    const speakingSignal = this.aboveThreshold ? 255 : 0
+    const speakingSignal = this.aboveThreshold ? 1 : 0
     if (this.speakingSignalData.length >= this.maxSignalPoints) {
       this.speakingSignalData.shift()
     }
@@ -305,11 +305,14 @@ class UtteranceEmitter {
 
     audioAnalyser.node.getByteTimeDomainData(audioAnalyser.dataArray)
 
-    canvasCtx.fillStyle = "rgb(200 200 200)"
+    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
+    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
+    const thresholdColor = this.config.charts?.thresholdColor || "rgb(255 0 0)"
+    canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
     canvasCtx.lineWidth = 2
-    canvasCtx.strokeStyle = "rgb(0 0 0)"
+    canvasCtx.strokeStyle = foregroundColor
     canvasCtx.beginPath()
 
     const sliceWidth = emitterCanvas.width / audioAnalyser.bufferLength
@@ -332,7 +335,7 @@ class UtteranceEmitter {
 
     // Draw the VOLUME_THRESHOLD bars
     canvasCtx.lineWidth = 1
-    canvasCtx.strokeStyle = "rgb(255 0 0)"
+    canvasCtx.strokeStyle = thresholdColor
     canvasCtx.beginPath()
     const thresholdYPositive =
       emitterCanvas.height / 2 -
@@ -355,34 +358,37 @@ class UtteranceEmitter {
     if (!audioAnalyser) return
     if (!canvasCtx) return
 
-    audioAnalyser.node.getByteFrequencyData(audioAnalyser.dataArray);
+    audioAnalyser.node.getByteFrequencyData(audioAnalyser.dataArray)
 
-    canvasCtx.fillStyle = "rgb(200 200 200)";
-    canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height);
+    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
+    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
+    const thresholdColor = this.config.charts?.thresholdColor || "rgb(255 0 0)"
+    canvasCtx.fillStyle = backgroundColor
+    canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
-    let barHeight;
-    let x = 0;
+    let barHeight
+    let x = 0
     for (let i = 0; i < audioAnalyser.bufferLength; i++) {
-      barHeight = audioAnalyser.dataArray[i] / 2;
+      barHeight = audioAnalyser.dataArray[i] / 2
 
-      canvasCtx.fillStyle = "rgb(0 0 0)";
+      canvasCtx.fillStyle = foregroundColor
       canvasCtx.fillRect(
         x,
         emitterCanvas.height - barHeight / 2,
         this.barWidth,
         barHeight
-      );
+      )
 
-      x += this.barWidth + this.barMargin;
+      x += this.barWidth + this.barMargin
     }
 
     // Draw the VOLUME_THRESHOLD line
-    canvasCtx.strokeStyle = "rgb(255 0 0)";
-    canvasCtx.beginPath();
-    const thresholdY = emitterCanvas.height - (this.volumeThreshold / 255.0) * emitterCanvas.height;
-    canvasCtx.moveTo(0, thresholdY);
-    canvasCtx.lineTo(emitterCanvas.width, thresholdY);
-    canvasCtx.stroke();
+    canvasCtx.strokeStyle = thresholdColor
+    canvasCtx.beginPath()
+    const thresholdY = emitterCanvas.height - (this.volumeThreshold / 255.0) * emitterCanvas.height
+    canvasCtx.moveTo(0, thresholdY)
+    canvasCtx.lineTo(emitterCanvas.width, thresholdY)
+    canvasCtx.stroke()
   }
 
   drawVolume() {
@@ -393,31 +399,34 @@ class UtteranceEmitter {
     if (!audioAnalyser) return
     if (!canvasCtx) return
 
-    canvasCtx.fillStyle = "rgb(200 200 200)";
-    canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height);
+    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
+    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
+    const thresholdColor = this.config.charts?.thresholdColor || "rgb(255 0 0)"
+    canvasCtx.fillStyle = backgroundColor
+    canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
-    let x = 0;
+    let x = 0
     for (let i = 0; i < this.volumeData.length; i++) {
-      const barHeight = (this.volumeData[i] / 255.0) * emitterCanvas.height;
+      const barHeight = (this.volumeData[i] / 255.0) * emitterCanvas.height
 
-      canvasCtx.fillStyle = "rgb(0 0 0)";
+      canvasCtx.fillStyle = foregroundColor
       canvasCtx.fillRect(
         x,
         emitterCanvas.height - barHeight,
         this.barWidth,
         barHeight
-      );
+      )
 
-      x += this.barWidth + this.barMargin;
+      x += this.barWidth + this.barMargin
     }
 
     // Draw the VOLUME_THRESHOLD line
-    canvasCtx.strokeStyle = "rgb(255 0 0)";
-    canvasCtx.beginPath();
-    const thresholdY = emitterCanvas.height - (this.volumeThreshold / 255.0) * emitterCanvas.height;
-    canvasCtx.moveTo(0, thresholdY);
-    canvasCtx.lineTo(emitterCanvas.width, thresholdY);
-    canvasCtx.stroke();
+    canvasCtx.strokeStyle = thresholdColor
+    canvasCtx.beginPath()
+    const thresholdY = emitterCanvas.height - (this.volumeThreshold / 255.0) * emitterCanvas.height
+    canvasCtx.moveTo(0, thresholdY)
+    canvasCtx.lineTo(emitterCanvas.width, thresholdY)
+    canvasCtx.stroke()
   }
 
   drawThresholdSignal() {
@@ -426,22 +435,24 @@ class UtteranceEmitter {
     const canvasCtx = emitterCanvas?.ctx
     if (!canvasCtx) return
 
-    canvasCtx.fillStyle = "rgb(200 200 200)";
-    canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height);
+    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
+    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
+    canvasCtx.fillStyle = backgroundColor
+    canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
-    let x = 0;
+    let x = 0
     for (let i = 0; i < this.thresholdSignalData.length; i++) {
-      const barHeight = (this.thresholdSignalData[i] / 255.0) * emitterCanvas.height;
+      const barHeight = (this.thresholdSignalData[i] / 255.0) * emitterCanvas.height
 
-      canvasCtx.fillStyle = "rgb(0 0 0)";
+      canvasCtx.fillStyle = foregroundColor
       canvasCtx.fillRect(
         x,
         emitterCanvas.height - barHeight,
         this.barWidth,
         barHeight
-      );
+      )
 
-      x += this.barWidth + this.barMargin;
+      x += this.barWidth + this.barMargin
     }
   }
 
@@ -451,23 +462,24 @@ class UtteranceEmitter {
     const canvasCtx = emitterCanvas?.ctx
     if (!canvasCtx) return
 
-    canvasCtx.fillStyle = "rgb(200 200 200)";
-    canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height);
+    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
+    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
+    canvasCtx.fillStyle = backgroundColor
+    canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
-
-    let x = 0;
+    let x = 0
     for (let i = 0; i < this.speakingSignalData.length; i++) {
-      const barHeight = (this.speakingSignalData[i] / 255.0) * emitterCanvas.height;
+      const barHeight = (this.speakingSignalData[i] / 255.0) * emitterCanvas.height
 
-      canvasCtx.fillStyle = "rgb(0 0 0)";
+      canvasCtx.fillStyle = foregroundColor
       canvasCtx.fillRect(
         x,
         emitterCanvas.height - barHeight,
         this.barWidth,
         barHeight
-      );
+      )
 
-      x += this.barWidth + this.barMargin;
+      x += this.barWidth + this.barMargin
     }
   }
 
