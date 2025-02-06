@@ -10,7 +10,7 @@ export interface EmitterConfig {
   emitText?: boolean; // Whether to emit text data
   sampleRate?: number; // The sample rate to use for audio recording
   mp3BitRate?: number; // The bit rate to use for MP3 encoding
-  filterDuration?: number; // Duration in milliseconds of below threshold audio to wait before stopping recording
+  quietPeriod?: number; // Duration in milliseconds of below threshold audio to wait before stopping recording
   charts?:{
     width?: number;
     height?: number;
@@ -26,17 +26,6 @@ export interface EmitterConfig {
     thresholdColor?: string; // Color for the threshold line
   }
 }
-
-export const defaultEmitterConfig: EmitterConfig = {
-  volumeThreshold: 7,
-  preRecordingDuration: 100,
-  emitRawAudio: false,
-  emitMP3Audio: true,
-  emitText: false,
-  sampleRate: 44100,
-  mp3BitRate: 128,
-  filterDuration: 500,
-};
 
 export interface EmitterCanvas {
   width: number;

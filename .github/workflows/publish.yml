@@ -1,12 +1,12 @@
-name: CI
+name: Publish
 
 on:
-  pull_request:
+  push:
     branches:
-      - '**'
+      - main
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
@@ -38,3 +38,8 @@ jobs:
           browser: chromium
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+
+      - name: Publish to npmjs
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
