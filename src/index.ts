@@ -4,6 +4,7 @@ import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
 
 const defaultSignalLength = 100
+const CHUNK_DURATION = 100 // Duration in milliseconds for each audio chunk
 
 class UtteranceEmitter extends EventEmitter {
   config: EmitterConfig
@@ -159,8 +160,7 @@ class UtteranceEmitter extends EventEmitter {
       this.preRecordingChunks.push(event.data);
       
       // Keep only the most recent chunks based on preRecordingDuration
-      const chunkDuration = 100; // Each chunk is roughly 100ms
-      const maxChunks = Math.ceil((this.config.preRecordingDuration || 100) / chunkDuration);
+      const maxChunks = Math.ceil((this.config.preRecordingDuration || 100) / CHUNK_DURATION);
       
       while (this.preRecordingChunks.length > maxChunks) {
         this.preRecordingChunks.shift();
@@ -168,7 +168,7 @@ class UtteranceEmitter extends EventEmitter {
     };
 
     // Start the pre-recording buffer recorder with a timeslice of 100ms
-    this.preRecordingMediaRecorder.start(100);
+    this.preRecordingMediaRecorder.start(CHUNK_DURATION);
 
     // Once the recording is signaled to stop because the filtered isSpeaking signal drops to zero, process the audio
     this.mediaRecorder.onstop = () => {
