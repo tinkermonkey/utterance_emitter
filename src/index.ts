@@ -1,10 +1,11 @@
 import * as lamejs from '@breezystack/lamejs';
 import { EmitterConfig, defaultEmitterConfig, EmitterCanvas, Utterance } from "./types"
 import { AudioAnalyser } from "./audio-analyser"
+import { EventEmitter } from "./event-emitter"
 
 const defaultSignalLength = 100
 
-class UtteranceEmitter {
+class UtteranceEmitter extends EventEmitter {
   config: EmitterConfig
   initialized: boolean = false
   audioContext?: AudioContext
@@ -36,6 +37,7 @@ class UtteranceEmitter {
   }
 
   constructor(config?: EmitterConfig) {
+    super();
     // merge the passed config with the default config
     this.config = { ...defaultEmitterConfig, ...config }
     this.handleStream = this.handleStream.bind(this)
@@ -266,6 +268,7 @@ class UtteranceEmitter {
 
       // Emit the utterance
       console.log("Emitting utterance:", utterance)
+      this.emit('utterance', utterance);
       if (this.config.onUtterance) {
         this.config.onUtterance(utterance)
       }
