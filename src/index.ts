@@ -6,6 +6,9 @@ import { EventEmitter } from "./event-emitter"
 const DEFAULT_SIGNAL_LENGTH = 100
 const PRERECORDING_CHUNK_DURATION = 100 // Duration in milliseconds for each audio chunk
 const DEFAULT_CHART_WIDTH = 400
+const DEFAULT_CHART_FOREGROUND = 'rgb(0 0 0)'
+const DEFAULT_BACKGROUND_COLOR = 'rgb(200 200 200)'
+const DEFAULT_THRESHOLD_COLOR = 'rgb(255 0 0)'
 
 class UtteranceEmitter extends EventEmitter {
   config: EmitterConfig
@@ -337,9 +340,9 @@ class UtteranceEmitter extends EventEmitter {
 
     audioAnalyser.node.getByteTimeDomainData(audioAnalyser.dataArray)
 
-    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
-    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
-    const thresholdColor = this.config.charts?.thresholdColor || "rgb(255 0 0)"
+    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
+    const thresholdColor = this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
@@ -392,9 +395,9 @@ class UtteranceEmitter extends EventEmitter {
 
     audioAnalyser.node.getByteFrequencyData(audioAnalyser.dataArray)
 
-    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
-    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
-    const thresholdColor = this.config.charts?.thresholdColor || "rgb(255 0 0)"
+    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
+    const thresholdColor = this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
@@ -431,9 +434,9 @@ class UtteranceEmitter extends EventEmitter {
     if (!audioAnalyser) return
     if (!canvasCtx) return
 
-    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
-    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
-    const thresholdColor = this.config.charts?.thresholdColor || "rgb(255 0 0)"
+    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
+    const thresholdColor = this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
@@ -467,8 +470,8 @@ class UtteranceEmitter extends EventEmitter {
     const canvasCtx = emitterCanvas?.ctx
     if (!canvasCtx) return
 
-    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
-    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
+    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
@@ -494,8 +497,8 @@ class UtteranceEmitter extends EventEmitter {
     const canvasCtx = emitterCanvas?.ctx
     if (!canvasCtx) return
 
-    const backgroundColor = this.config.charts?.backgroundColor || "rgb(200 200 200)"
-    const foregroundColor = this.config.charts?.foregroundColor || "rgb(0 0 0)"
+    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
