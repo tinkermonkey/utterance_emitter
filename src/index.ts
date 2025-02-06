@@ -284,7 +284,9 @@ class UtteranceEmitter extends EventEmitter {
       const mp3Blob = await UtteranceEmitter.encodeMP3(audioBuffer, this.config.mp3BitRate)
 
       // Emit the utterance
-      const utterance = {} as Utterance
+      const utterance = {
+        timestamp: Date.now()
+      } as Utterance
       if (this.config.emitRawAudio) {
         utterance.raw = audioBlob
       }

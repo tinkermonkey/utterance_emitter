@@ -69,4 +69,5 @@ export type Utterance = {
   raw?: RawAudioUtterance;
   mp3?: MP3AudioUtterance;
   text?: TextUtterance;
+  timestamp: number;
 };
