@@ -281,7 +281,7 @@ class UtteranceEmitter extends EventEmitter {
     try {
       const arrayBuffer = await audioBlob.arrayBuffer()
       const audioBuffer = await new AudioContext().decodeAudioData(arrayBuffer)
-      const mp3Blob = await UtteranceEmitter.encodeMP3(audioBuffer)
+      const mp3Blob = await UtteranceEmitter.encodeMP3(audioBuffer, this.config.mp3BitRate)
 
       // Emit the utterance
       const utterance = {} as Utterance
@@ -518,7 +518,7 @@ class UtteranceEmitter extends EventEmitter {
     }
   }
 
-  static encodeMP3(audioBuffer: AudioBuffer): Blob {
+  static encodeMP3(audioBuffer: AudioBuffer, bitRate: number = 128): Blob {
     const channels = 1 // Assuming mono audio
     const sampleRate = audioBuffer.sampleRate
     const audioData = audioBuffer.getChannelData(0)
@@ -530,7 +530,7 @@ class UtteranceEmitter extends EventEmitter {
     }
 
     // create mp3 encoder
-    const kbps = 128
+    const kbps = bitRate
     const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, kbps)
     const sampleBlockSize = 1152
     let sampleChunk

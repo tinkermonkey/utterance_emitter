@@ -110,7 +110,7 @@ The `EmitterConfig` interface provides several options to customize the behavior
 - **emitMP3Audio**: Whether to emit MP3 audio data. Default is `true`.
 - **emitText**: Whether to emit text data. Default is `false`.
 - **sampleRate**: The sample rate to use for audio recording. Default is `44100`.
-- **mp3BitRate**: The bit rate to use for MP3 encoding. Default is `128`.
+- **mp3BitRate**: The bit rate in kbps to use for MP3 encoding. Default is `128`.
 - **charts**: An optional object to configure the charts. The object can have the following properties:
   - **width**: The width of the charts. Default is `400`.
   - **height**: The height of the charts. Default is `100`.
