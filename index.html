@@ -44,12 +44,19 @@
       button:hover {
         background: #45a049;
       }
+
+      button.recording {
+        background: #ff4444;
+      }
+
+      button.recording:hover {
+        background: #ee3333;
+      }
     </style>
     <script type="module">
       import { UtteranceEmitter } from "./dist/bundle.esm.js";
 
       const startButton = document.getElementById("startButton");
-      const stopButton = document.getElementById("stopButton");
       const wavRecordingsList = document.getElementById("wavRecordingsList");
       const mp3RecordingsList = document.getElementById("mp3RecordingsList");
       const speakingIndicator = document.getElementById("speakingIndicator");
@@ -122,8 +129,19 @@
         }
       });
 
-      startButton.addEventListener("click", () => emitter.start());
-      stopButton.addEventListener("click", () => emitter.stop());
+      let isRecording = false;
+      startButton.addEventListener("click", () => {
+        if (!isRecording) {
+          emitter.start();
+          startButton.textContent = "Stop";
+          startButton.classList.add("recording");
+        } else {
+          emitter.stop();
+          startButton.textContent = "Start";
+          startButton.classList.remove("recording");
+        }
+        isRecording = !isRecording;
+      });
 
       // Initialize the emitter when the dom is ready
       document.addEventListener("DOMContentLoaded", () => {
