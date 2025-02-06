@@ -1,7 +1,6 @@
 import * as lamejs from "@breezystack/lamejs"
 import {
   EmitterConfig,
-  defaultEmitterConfig,
   EmitterCanvas,
   Utterance,
   SpeakingEvent,
@@ -11,10 +10,14 @@ import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
 
 const enablePreRecording = false
+const preRecordingChunkDuration = 10 // Duration in milliseconds for each audio chunks
 
 const DEFAULT_VOLUME_THRESHOLD = 7
 const DEFAULT_SIGNAL_LENGTH = 100
-const PRERECORDING_CHUNK_DURATION = 10 // Duration in milliseconds for each audio chunks
+const DEFAULT_QUET_PERIOD = 400
+const DEFAULT_PRE_RECORDING_DURATION = 200
+const DEFAULT_MP3_BITRATE = 128
+const DEFAULT_SAMPLE_RATE = 44100
 const DEFAULT_CHART_WIDTH = 400
 const DEFAULT_CHART_HEIGHT = 200
 const DEFAULT_CHART_FOREGROUND = "rgb(0 0 0)"
@@ -24,22 +27,47 @@ const DEFAULT_BAR_WIDTH = 2.5
 const DEFAULT_BAR_MARGIN = 1
 const CHART_SCALE = 255.0
 
+export const defaultEmitterConfig: EmitterConfig = {
+  volumeThreshold: DEFAULT_VOLUME_THRESHOLD,
+  preRecordingDuration: DEFAULT_PRE_RECORDING_DURATION,
+  emitRawAudio: false,
+  emitMP3Audio: true,
+  emitText: false,
+  sampleRate: DEFAULT_SAMPLE_RATE,
+  mp3BitRate: DEFAULT_MP3_BITRATE,
+  quietPeriod: DEFAULT_QUET_PERIOD,
+}
+
 class UtteranceEmitter extends EventEmitter {
   config: EmitterConfig
   initialized: boolean = false
+
+  // Audio interface elements
   audioContext?: AudioContext
   mediaRecorder?: MediaRecorder
   preRecordingMediaRecorder?: MediaRecorder
+
+  // Audio processing state
   volumeThreshold: number = DEFAULT_VOLUME_THRESHOLD
+  aboveThreshold: boolean = false
+  belowThresholdDuration: number = 0
+
+  // Audio signal data
   audioChunks: Float32Array[] = []
   preRecordingChunks: Float32Array[] = []
+
+  // Processed signal data
   volumeData: number[] = []
   thresholdSignalData: number[] = []
   speakingSignalData: number[] = []
   maxSignalPoints: number = DEFAULT_SIGNAL_LENGTH
-  aboveThreshold: boolean = false
-  belowThresholdDuration: number = 0
-  preRecordingDuration?: number
+  analysers?: {
+    waveform?: AudioAnalyser
+    frequency?: AudioAnalyser
+    volume: AudioAnalyser
+  }
+  
+  // Chart elements
   canvases?: {
     waveform?: EmitterCanvas
     frequency?: EmitterCanvas
@@ -50,12 +78,11 @@ class UtteranceEmitter extends EventEmitter {
   barWidth: number = DEFAULT_BAR_WIDTH
   barMargin: number = DEFAULT_BAR_MARGIN
   animationFrameId?: number
-  analysers?: {
-    waveform?: AudioAnalyser
-    frequency?: AudioAnalyser
-    volume: AudioAnalyser
-  }
 
+  /**
+   * Create a new UtteranceEmitter with the provided configuration
+   * @param config Configuration for the utterance emitter
+   */
   constructor(config?: EmitterConfig) {
     super()
     // merge the passed config with the default config
@@ -65,6 +92,7 @@ class UtteranceEmitter extends EventEmitter {
 
   /**
    * Initialize the audio context and any charts that are configured
+   * Doesn't start recording audio, doesn't need to be called before start()
    */
   init(): void {
     console.log("Initializing utterance emitter")
@@ -124,13 +152,13 @@ class UtteranceEmitter extends EventEmitter {
     }
 
     navigator.mediaDevices
-      .getUserMedia({ audio: { sampleRate: this.config.sampleRate } })
+      .getUserMedia({ audio: { sampleRate: this.config.sampleRate || DEFAULT_SAMPLE_RATE } })
       .then(this.handleStream)
       .catch(this.handleError)
   }
 
   /**
-   * Main loop for processing the audio stream
+   * Setup the audio processing once there's a stream available
    */
   handleStream(stream: MediaStream): void {
     this.audioContext = new AudioContext()
@@ -189,16 +217,18 @@ class UtteranceEmitter extends EventEmitter {
         this.preRecordingChunks.push(event.data)
 
         // Limit the pre-recording buffer to the pre-recording duration
+        const preRecordingDuration =
+          this.config.preRecordingDuration || DEFAULT_PRE_RECORDING_DURATION
         if (
-          this.preRecordingDuration &&
+          preRecordingDuration &&
           this.preRecordingChunks.length >
-            this.preRecordingDuration / PRERECORDING_CHUNK_DURATION
+            preRecordingDuration / preRecordingChunkDuration
         ) {
           this.preRecordingChunks.shift()
         }
 
         // Start the pre-recording buffer recorder with a finite time slice
-        this.preRecordingMediaRecorder?.start(PRERECORDING_CHUNK_DURATION)
+        this.preRecordingMediaRecorder?.start(preRecordingChunkDuration)
       }
     }
 
@@ -255,7 +285,10 @@ class UtteranceEmitter extends EventEmitter {
       this.belowThresholdDuration = 0
     } else {
       this.belowThresholdDuration += 16.67 // Approximate duration of one frame at 60 FPS
-      if (this.belowThresholdDuration >= (this.config.filterDuration || 500)) {
+      if (
+        this.belowThresholdDuration >=
+        (this.config.quietPeriod || DEFAULT_QUET_PERIOD)
+      ) {
         this.aboveThreshold = false
       }
     }
@@ -318,7 +351,7 @@ class UtteranceEmitter extends EventEmitter {
       const audioBuffer = await new AudioContext().decodeAudioData(arrayBuffer)
       const mp3Blob = await UtteranceEmitter.encodeMP3(
         audioBuffer,
-        this.config.mp3BitRate
+        this.config.mp3BitRate || DEFAULT_MP3_BITRATE
       )
 
       // Create the utterance

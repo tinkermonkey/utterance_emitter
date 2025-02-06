@@ -2,9 +2,11 @@
 
 ![CI](https://github.com/tinkermonkey/utterance_emitter/actions/workflows/ci.yml/badge.svg)
 [![Known Vulnerabilities](https://snyk.io/test/github/tinkermonkey/utterance_emitter/badge.svg)](https://snyk.io/test/github/tinkermonkey/utterance_emitter)
-[![npm version](https://badge.fury.io/js/utterance-emitter.svg)](https://badge.fury.io/js/utterance-emitter)
+[![npm version](https://badge.fury.io/js/@tinkermonkey%2Futterance-emitter.svg)](https://badge.fury.io/js/@tinkermonkey%2Futterance-emitter)
 
-Utterance Emitter is a Node.js library for recording audio in a browser, performing speaker detection, and emitting chunks of mp3 encoded audio representing utterances for further processing.
+Utterance Emitter is a library for recording audio in the browser, performing speaker detection, and emitting chunks of mp3 encoded audio representing utterances for further processing.
+
+This has been kept deliberately simple with minimal dependencies, if you're looking for extensibility that doesn't exist in order to enable more elaborate use cases, put up an MR.
 
 ## Installation
 
@@ -44,7 +46,7 @@ document.getElementById('stopButton').addEventListener('click', () => emitter.st
 
 ## Algorithm for Speaker Detection
 
-The UtteranceEmitter library uses a simple algorithm to detect when someone is speaking. The algorithm works as follows:
+The *UtteranceEmitter* library uses an unsophisticated but working reasonably well algorithm to detect when someone is speaking:
 
 1. **Volume Analysis**: The audio stream is analyzed in real-time to calculate the average volume level. This is done using the Web Audio API's `AnalyserNode`.
 
@@ -52,17 +54,17 @@ The UtteranceEmitter library uses a simple algorithm to detect when someone is s
 
 3. **Filtered Signal**: A filtered signal is generated based on the threshold comparison. If the volume is above the threshold, the filtered signal is set to a high value (1). If the volume is below the threshold for a certain duration (e.g., 500ms), the filtered signal is set to a low value (0).
 
-4. **Pre-recording Buffer**: To capture the beginning of an utterance, a pre-recording buffer is maintained. This buffer stores a short duration of audio data before the volume exceeds the threshold.
+4. **Pre-recording Buffer**: To capture the beginning of an utterance, a pre-recording buffer is maintained. This buffer stores a short duration of audio data before the volume exceeds the threshold. **Not currently working**
 
 5. **Recording Control**: The media recorder starts recording when the filtered signal indicates speaking and stops recording when the filtered signal indicates silence.
 
 6. **Utterance Emission**: Once the recording stops, the recorded audio chunks are processed and emitted as an utterance. The utterance can include raw audio, MP3 audio, and optionally text data.
 
-This algorithm provides a basic yet effective way to detect when someone is speaking and capture their utterances for further processing.
-
 ## Optional Charts
 
-UtteranceEmitter can also visualize the audio data using optional charts. These charts can help in understanding the audio signal and the detection process. The following charts are available:
+*UtteranceEmitter* can also visualize the audio data using optional charts. These charts can help in understanding the audio signal and the detection process. These charts are kept deliberately simple and free of dependencies.
+
+The following charts are available, they can be individually enabled:
 
 1. **Waveform Chart**: Displays the time-domain representation of the audio signal.
 2. **Frequency Chart**: Displays the frequency-domain representation of the audio signal.
@@ -93,7 +95,7 @@ const emitter = new UtteranceEmitter({
 });
 ```
 
-Ensure that the canvas elements are present in your HTML:
+Ensure that the canvas elements are present in your HTML (obviously you can use any selector you like, you're passing in the element reference):
 
 ```html
 <canvas id="waveform"></canvas>
@@ -105,9 +107,9 @@ Ensure that the canvas elements are present in your HTML:
 
 ## EmitterConfig Options
 
-The `EmitterConfig` interface provides several options to customize the behavior of the `UtteranceEmitter`. Here are the available options:
+The `EmitterConfig` interface provides several options to customize the behavior of the `UtteranceEmitter`:
 
-- **onUtterance**: A callback function that is called when an utterance is detected. The function receives an `Utterance` object as an argument.
+- **onUtterance**: A callback function that is called when an utterance is detected. The callback function receives an `Utterance` object as the argument. This is triggered at the same time that an `Utterance` event is fired, there's no difference so use the one you like.
 - **volumeThreshold**: The volume threshold at which to start recording. Default is `7`.
 - **preRecordingDuration**: The number of milliseconds to keep in a buffer before the volume threshold is reached. Default is `100`.
 - **emitRawAudio**: Whether to emit raw audio data. Default is `false`.
@@ -130,7 +132,7 @@ The `EmitterConfig` interface provides several options to customize the behavior
 
 ## Events
 
-The UtteranceEmitter extends EventEmitter and emits the following events:
+The UtteranceEmitter emits the following events:
 
 ### speaking
 
@@ -156,7 +158,6 @@ emitter.on('utterance', (event) => {
   //   text?: string - Transcribed text (if emitText is true)
   //   timestamp: number - milliseconds since epoch when utterance was recorded
   // }
-  // event.timestamp: number - milliseconds since epoch when event was emitted
   
   if (event.utterance.mp3) {
     // Handle MP3 audio...
