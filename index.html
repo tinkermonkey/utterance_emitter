@@ -4,6 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Utterance Emitter Demo</title>
+    <style>
+      .recordings-list {
+        list-style: none;
+        padding: 0;
+      }
+      
+      .recording-item {
+        background: #f5f5f5;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .download-link {
+        background: #4CAF50;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+      }
+      
+      .download-link:hover {
+        background: #45a049;
+      }
+    </style>
     <script type="module">
       import { UtteranceEmitter } from "./dist/bundle.esm.js";
 
@@ -31,6 +59,7 @@
           if (utterance.mp3) {
             const url = URL.createObjectURL(utterance.mp3);
             const li = document.createElement("li");
+            li.className = "recording-item";
             const audio = document.createElement("audio");
             const downloadLink = document.createElement("a");
 
@@ -38,6 +67,7 @@
             audio.src = url;
             downloadLink.href = url;
             downloadLink.download = `recording_${mp3RecordingsList.children.length}.mp3`;
+            downloadLink.className = "download-link";
             downloadLink.textContent = `Download recording ${mp3RecordingsList.children.length}`;
 
             li.appendChild(audio);
@@ -48,6 +78,7 @@
           if(utterance.raw) {
             const url = URL.createObjectURL(utterance.raw);
             const li = document.createElement("li");
+            li.className = "recording-item";
             const audio = document.createElement("audio");
             const downloadLink = document.createElement("a");
 
@@ -55,6 +86,7 @@
             audio.src = url;
             downloadLink.href = url;
             downloadLink.download = `recording_${wavRecordingsList.children.length}.wav`;
+            downloadLink.className = "download-link";
             downloadLink.textContent = `Download recording ${wavRecordingsList.children.length}`;
 
             li.appendChild(audio);
@@ -103,8 +135,8 @@
       <canvas id="speaking"></canvas>
     </div>
     <h2>Captured Wav Audio Utterances</h2>
-    <ul id="wavRecordingsList"></ul>
+    <ul id="wavRecordingsList" class="recordings-list"></ul>
     <h2>Captured MP3 Audio Utterances</h2>
-    <ul id="mp3RecordingsList"></ul>
+    <ul id="mp3RecordingsList" class="recordings-list"></ul>
   </body>
 </html>
