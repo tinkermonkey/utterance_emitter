@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c",
-    "start": "http-server -c-1",
+    "start": "http-server -c-1 -p 3100",
     "dev": "nodemon --watch src --exec 'npm run build'",
     "test": "cypress run --browser chromium",
     "test:open": "cypress open"

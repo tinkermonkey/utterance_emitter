@@ -7,6 +7,7 @@ const cantinaTestFile = 'cypress/test_data/CantinaBand3.wav'
 let currentAudioFile = shortAudioFile // default audio file
 
 export default defineConfig({
+  projectId: "ya6x96",
   e2e: {
     setupNodeEvents(on, config) {
       // implement node event listeners here
@@ -30,7 +31,7 @@ export default defineConfig({
         return launchOptions
       })
     },
-    baseUrl: 'http://localhost:8080',
+    baseUrl: 'http://localhost:3100',
     browser: 'chromium'
   },
 })
