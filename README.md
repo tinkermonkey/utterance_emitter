@@ -123,3 +123,41 @@ The `EmitterConfig` interface provides several options to customize the behavior
   - **speaking**: An HTML canvas element to display the speaking signal chart.
   - **foregroundColor**: Color for the chart elements.
   - **backgroundColor**: Background color for the charts.
+
+## Events
+
+The UtteranceEmitter extends EventEmitter and emits the following events:
+
+### speaking
+
+Emitted when the speaking state changes (both when starting and stopping speaking). Subscribe to this event to be notified in real-time when speaking is detected.
+
+```javascript
+emitter.on('speaking', (event) => {
+  // event.speaking: boolean - true when speaking starts, false when it stops
+  // event.timestamp: number - milliseconds since epoch when the event occurred
+  console.log(`Speaking changed to: ${event.speaking} at ${event.timestamp}`);
+});
+```
+
+### utterance
+
+Emitted when a complete utterance has been detected and processed. This occurs after speaking stops and the audio has been processed.
+
+```javascript
+emitter.on('utterance', (event) => {
+  // event.utterance: {
+  //   raw?: Blob - Raw audio data (if emitRawAudio is true)
+  //   mp3?: Blob - MP3 encoded audio (if emitMP3Audio is true)
+  //   text?: string - Transcribed text (if emitText is true)
+  //   timestamp: number - milliseconds since epoch when utterance was recorded
+  // }
+  // event.timestamp: number - milliseconds since epoch when event was emitted
+  
+  if (event.utterance.mp3) {
+    // Handle MP3 audio...
+  }
+});
+```
+
+You can subscribe to events either using the `.on()` method as shown above, or by providing an `onUtterance` callback in the config. The `onUtterance` callback is equivalent to subscribing to the 'utterance' event but only receives the utterance object, not the full event.
