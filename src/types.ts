@@ -67,7 +67,6 @@ export type TextUtterance = string;
 
 export interface UtteranceEvent {
   utterance: Utterance;
-  timestamp: number;
 }
 
 export type Utterance = {

@@ -1,18 +1,28 @@
-import * as lamejs from '@breezystack/lamejs';
-import { EmitterConfig, defaultEmitterConfig, EmitterCanvas, Utterance, SpeakingEvent, UtteranceEvent } from "./types"
+import * as lamejs from "@breezystack/lamejs"
+import {
+  EmitterConfig,
+  defaultEmitterConfig,
+  EmitterCanvas,
+  Utterance,
+  SpeakingEvent,
+  UtteranceEvent,
+} from "./types"
 import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
 
+const enablePreRecording = false
+
 const DEFAULT_VOLUME_THRESHOLD = 7
 const DEFAULT_SIGNAL_LENGTH = 100
-const PRERECORDING_CHUNK_DURATION = 100 // Duration in milliseconds for each audio chunk
+const PRERECORDING_CHUNK_DURATION = 10 // Duration in milliseconds for each audio chunks
 const DEFAULT_CHART_WIDTH = 400
 const DEFAULT_CHART_HEIGHT = 200
-const DEFAULT_CHART_FOREGROUND = 'rgb(0 0 0)'
-const DEFAULT_BACKGROUND_COLOR = 'rgb(200 200 200)'
-const DEFAULT_THRESHOLD_COLOR = 'rgb(255 0 0)'
+const DEFAULT_CHART_FOREGROUND = "rgb(0 0 0)"
+const DEFAULT_BACKGROUND_COLOR = "rgb(200 200 200)"
+const DEFAULT_THRESHOLD_COLOR = "rgb(255 0 0)"
 const DEFAULT_BAR_WIDTH = 2.5
 const DEFAULT_BAR_MARGIN = 1
+const CHART_SCALE = 255.0
 
 class UtteranceEmitter extends EventEmitter {
   config: EmitterConfig
@@ -47,7 +57,7 @@ class UtteranceEmitter extends EventEmitter {
   }
 
   constructor(config?: EmitterConfig) {
-    super();
+    super()
     // merge the passed config with the default config
     this.config = { ...defaultEmitterConfig, ...config }
     this.handleStream = this.handleStream.bind(this)
@@ -143,13 +153,17 @@ class UtteranceEmitter extends EventEmitter {
     // Set the bar width on the charts and max data points
     if (this.config.charts) {
       const chartWidth = this.config.charts.width || DEFAULT_CHART_WIDTH
-      this.barWidth = (chartWidth / (this.analysers.frequency?.bufferLength || DEFAULT_SIGNAL_LENGTH)) * (this.config.charts.barWidthNominal || 2.5);
-      this.barMargin = this.config.charts.barMargin || 1
+      this.barWidth =
+        (chartWidth /
+          (this.analysers.frequency?.bufferLength || DEFAULT_SIGNAL_LENGTH)) *
+        (this.config.charts.barWidthNominal || DEFAULT_BAR_WIDTH)
+      this.barMargin = this.config.charts.barMargin || DEFAULT_BAR_MARGIN
 
-      this.maxSignalPoints = Math.ceil(chartWidth / (this.barWidth + this.barMargin))
+      this.maxSignalPoints = Math.ceil(
+        chartWidth / (this.barWidth + this.barMargin)
+      )
     }
 
-    // Create a media recorder to capture the audio stream
     this.mediaRecorder = new MediaRecorder(stream)
 
     // Accumulate audio chunks as they come in
@@ -158,22 +172,34 @@ class UtteranceEmitter extends EventEmitter {
       this.audioChunks.push(event.data)
     }
 
-    // Create a second media recorder for the pre-recording buffer
-    this.preRecordingMediaRecorder = new MediaRecorder(stream);
-    this.preRecordingChunks = [];
-
-    // Keep some pre-recording buffer to better capture sharp rises in volume
-    this.preRecordingMediaRecorder.ondataavailable = (event) => {
-      // @ts-ignore
-      this.preRecordingChunks = [event.data]
-    };
-
-    // Start the pre-recording buffer recorder with a timeslice of 100ms
-    this.preRecordingMediaRecorder.start(this.config.preRecordingDuration || PRERECORDING_CHUNK_DURATION);
-
     // Once the recording is signaled to stop because the filtered isSpeaking signal drops to zero, process the audio
     this.mediaRecorder.onstop = () => {
       this.processUtterance()
+    }
+
+    // Create a media recorder to capture the audio stream
+    if (enablePreRecording) {
+      // Create a second media recorder for the pre-recording buffer
+      this.preRecordingMediaRecorder = new MediaRecorder(stream)
+      this.preRecordingChunks = []
+
+      // Keep some pre-recording buffer to better capture sharp rises in volume
+      this.preRecordingMediaRecorder.ondataavailable = (event) => {
+        // @ts-ignore
+        this.preRecordingChunks.push(event.data)
+
+        // Limit the pre-recording buffer to the pre-recording duration
+        if (
+          this.preRecordingDuration &&
+          this.preRecordingChunks.length >
+            this.preRecordingDuration / PRERECORDING_CHUNK_DURATION
+        ) {
+          this.preRecordingChunks.shift()
+        }
+
+        // Start the pre-recording buffer recorder with a finite time slice
+        this.preRecordingMediaRecorder?.start(PRERECORDING_CHUNK_DURATION)
+      }
     }
 
     this.processAudio()
@@ -198,6 +224,7 @@ class UtteranceEmitter extends EventEmitter {
    * Process audio from the stream and monitor the volume, waveform, and frequency
    */
   processAudio(): void {
+    console.log("Processing audio")
     if (!this.analysers) return
     const levelAnalyser = this.analysers.volume
     levelAnalyser.node.getByteFrequencyData(levelAnalyser.dataArray)
@@ -235,20 +262,26 @@ class UtteranceEmitter extends EventEmitter {
 
     // Store the speaking signal
     const speakingSignal = this.aboveThreshold ? 1 : 0
-    
+
     // If the speaking state has changed from 0 to 1, emit the speaking event
-    if (speakingSignal === 1 && this.speakingSignalData[this.speakingSignalData.length - 1] === 0) {
+    if (
+      speakingSignal === 1 &&
+      this.speakingSignalData[this.speakingSignalData.length - 1] === 0
+    ) {
       const event: SpeakingEvent = {
         speaking: true,
-        timestamp: Date.now()
-      };
-      this.emit('speaking', event);
-    } else if (speakingSignal === 0 && this.speakingSignalData[this.speakingSignalData.length - 1] === 1) {
+        timestamp: Date.now(),
+      }
+      this.emit("speaking", event)
+    } else if (
+      speakingSignal === 0 &&
+      this.speakingSignalData[this.speakingSignalData.length - 1] === 1
+    ) {
       const event: SpeakingEvent = {
         speaking: false,
-        timestamp: Date.now()
-      };
-      this.emit('speaking', event);
+        timestamp: Date.now(),
+      }
+      this.emit("speaking", event)
     }
 
     if (this.speakingSignalData.length >= this.maxSignalPoints) {
@@ -258,10 +291,10 @@ class UtteranceEmitter extends EventEmitter {
 
     // Start or stop recording based on filtered signal
     if (speakingSignal && this.mediaRecorder?.state === "inactive") {
-      console.log("Starting media recorder, pre-populating with pre-recording buffer", this.preRecordingChunks)
-      //this.audioChunks = [...this.preRecordingChunks]; // Include pre-recording buffer
+      console.log("Starting media recorder")
       this.mediaRecorder.start()
     } else if (!speakingSignal && this.mediaRecorder?.state === "recording") {
+      console.log("Stopping media recorder")
       this.mediaRecorder.stop()
     }
 
@@ -272,18 +305,25 @@ class UtteranceEmitter extends EventEmitter {
    * Process any audio blob from the stream which has been captured
    */
   async processUtterance(): Promise<void> {
+    console.log("Processing utterance")
     if (!this.audioContext) return
 
     const audioBlob = new Blob(this.audioChunks, { type: "audio/wav" })
 
+    // Clear the audio chunks
+    this.audioChunks = []
+
     try {
       const arrayBuffer = await audioBlob.arrayBuffer()
       const audioBuffer = await new AudioContext().decodeAudioData(arrayBuffer)
-      const mp3Blob = await UtteranceEmitter.encodeMP3(audioBuffer, this.config.mp3BitRate)
+      const mp3Blob = await UtteranceEmitter.encodeMP3(
+        audioBuffer,
+        this.config.mp3BitRate
+      )
 
       // Create the utterance
       const utterance = {
-        timestamp: Date.now()
+        timestamp: Date.now(),
       } as Utterance
       if (this.config.emitRawAudio) {
         utterance.raw = audioBlob
@@ -298,11 +338,10 @@ class UtteranceEmitter extends EventEmitter {
       // Create and emit the utterance event
       const utteranceEvent: UtteranceEvent = {
         utterance,
-        timestamp: Date.now()
-      };
+      }
 
       console.log("Emitting utterance event:", utteranceEvent)
-      this.emit('utterance', utteranceEvent);
+      this.emit("utterance", utteranceEvent)
       if (this.config.onUtterance) {
         this.config.onUtterance(utterance)
       }
@@ -320,18 +359,21 @@ class UtteranceEmitter extends EventEmitter {
     console.log("Stopping utterance emitter")
 
     if (this.audioContext) {
-      this.audioContext.close();
-      this.audioContext = undefined;
+      this.audioContext.close()
+      this.audioContext = undefined
     }
     if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = undefined;
+      cancelAnimationFrame(this.animationFrameId)
+      this.animationFrameId = undefined
     }
     if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
-      this.mediaRecorder.stop();
+      this.mediaRecorder.stop()
     }
-    if (this.preRecordingMediaRecorder && this.preRecordingMediaRecorder.state !== "inactive") {
-      this.preRecordingMediaRecorder.stop();
+    if (
+      this.preRecordingMediaRecorder &&
+      this.preRecordingMediaRecorder.state !== "inactive"
+    ) {
+      this.preRecordingMediaRecorder.stop()
     }
   }
 
@@ -345,9 +387,12 @@ class UtteranceEmitter extends EventEmitter {
 
     audioAnalyser.node.getByteTimeDomainData(audioAnalyser.dataArray)
 
-    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
-    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
-    const thresholdColor = this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
+    const backgroundColor =
+      this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor =
+      this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
+    const thresholdColor =
+      this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
@@ -379,10 +424,10 @@ class UtteranceEmitter extends EventEmitter {
     canvasCtx.beginPath()
     const thresholdYPositive =
       emitterCanvas.height / 2 -
-      ((this.volumeThreshold / 255.0) * emitterCanvas.height) / 2
+      ((this.volumeThreshold / CHART_SCALE) * emitterCanvas.height) / 2
     const thresholdYNegative =
       emitterCanvas.height / 2 +
-      ((this.volumeThreshold / 255.0) * emitterCanvas.height) / 2
+      ((this.volumeThreshold / CHART_SCALE) * emitterCanvas.height) / 2
     canvasCtx.moveTo(0, thresholdYPositive)
     canvasCtx.lineTo(emitterCanvas.width, thresholdYPositive)
     canvasCtx.moveTo(0, thresholdYNegative)
@@ -400,9 +445,12 @@ class UtteranceEmitter extends EventEmitter {
 
     audioAnalyser.node.getByteFrequencyData(audioAnalyser.dataArray)
 
-    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
-    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
-    const thresholdColor = this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
+    const backgroundColor =
+      this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor =
+      this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
+    const thresholdColor =
+      this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
@@ -425,7 +473,9 @@ class UtteranceEmitter extends EventEmitter {
     // Draw the VOLUME_THRESHOLD line
     canvasCtx.strokeStyle = thresholdColor
     canvasCtx.beginPath()
-    const thresholdY = emitterCanvas.height - (this.volumeThreshold / 255.0) * emitterCanvas.height
+    const thresholdY =
+      emitterCanvas.height -
+      (this.volumeThreshold / CHART_SCALE) * emitterCanvas.height
     canvasCtx.moveTo(0, thresholdY)
     canvasCtx.lineTo(emitterCanvas.width, thresholdY)
     canvasCtx.stroke()
@@ -439,15 +489,19 @@ class UtteranceEmitter extends EventEmitter {
     if (!audioAnalyser) return
     if (!canvasCtx) return
 
-    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
-    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
-    const thresholdColor = this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
+    const backgroundColor =
+      this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor =
+      this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
+    const thresholdColor =
+      this.config.charts?.thresholdColor || DEFAULT_THRESHOLD_COLOR
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
     let x = 0
     for (let i = 0; i < this.volumeData.length; i++) {
-      const barHeight = (this.volumeData[i] / 255.0) * emitterCanvas.height
+      const barHeight =
+        (this.volumeData[i] / CHART_SCALE) * emitterCanvas.height
 
       canvasCtx.fillStyle = foregroundColor
       canvasCtx.fillRect(
@@ -463,26 +517,33 @@ class UtteranceEmitter extends EventEmitter {
     // Draw the VOLUME_THRESHOLD line
     canvasCtx.strokeStyle = thresholdColor
     canvasCtx.beginPath()
-    const thresholdY = emitterCanvas.height - (this.volumeThreshold / 255.0) * emitterCanvas.height
+    const thresholdY =
+      emitterCanvas.height -
+      (this.volumeThreshold / CHART_SCALE) * emitterCanvas.height
     canvasCtx.moveTo(0, thresholdY)
     canvasCtx.lineTo(emitterCanvas.width, thresholdY)
     canvasCtx.stroke()
   }
 
   drawThresholdSignal() {
-    const drawVisual = requestAnimationFrame(this.drawThresholdSignal.bind(this))
+    const drawVisual = requestAnimationFrame(
+      this.drawThresholdSignal.bind(this)
+    )
     const emitterCanvas = this.canvases?.threshold
     const canvasCtx = emitterCanvas?.ctx
     if (!canvasCtx) return
 
-    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
-    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
+    const backgroundColor =
+      this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor =
+      this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
     let x = 0
     for (let i = 0; i < this.thresholdSignalData.length; i++) {
-      const barHeight = (this.thresholdSignalData[i] / 255.0) * emitterCanvas.height
+      const barHeight =
+        (this.thresholdSignalData[i] ? CHART_SCALE : 0) * emitterCanvas.height
 
       canvasCtx.fillStyle = foregroundColor
       canvasCtx.fillRect(
@@ -502,14 +563,17 @@ class UtteranceEmitter extends EventEmitter {
     const canvasCtx = emitterCanvas?.ctx
     if (!canvasCtx) return
 
-    const backgroundColor = this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
-    const foregroundColor = this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
+    const backgroundColor =
+      this.config.charts?.backgroundColor || DEFAULT_BACKGROUND_COLOR
+    const foregroundColor =
+      this.config.charts?.foregroundColor || DEFAULT_CHART_FOREGROUND
     canvasCtx.fillStyle = backgroundColor
     canvasCtx.fillRect(0, 0, emitterCanvas.width, emitterCanvas.height)
 
     let x = 0
     for (let i = 0; i < this.speakingSignalData.length; i++) {
-      const barHeight = (this.speakingSignalData[i] / 255.0) * emitterCanvas.height
+      const barHeight =
+        (this.speakingSignalData[i] ? CHART_SCALE : 0) * emitterCanvas.height
 
       canvasCtx.fillStyle = foregroundColor
       canvasCtx.fillRect(
@@ -521,58 +585,6 @@ class UtteranceEmitter extends EventEmitter {
 
       x += this.barWidth + this.barMargin
     }
-  }
-
-  /**
-   * Combines two audio blobs into a single blob
-   * @param blob1 First audio blob
-   * @param blob2 Second audio blob
-   * @returns Promise that resolves to a combined audio blob
-   */
-  static async combineAudioBlobs(blob1: Blob, blob2: Blob): Promise<Blob> {
-    // Convert blobs to array buffers
-    const buffer1 = await blob1.arrayBuffer();
-    const buffer2 = await blob2.arrayBuffer();
-
-    // Create audio contexts and decode the buffers
-    const audioContext = new AudioContext();
-    const audioBuffer1 = await audioContext.decodeAudioData(buffer1);
-    const audioBuffer2 = await audioContext.decodeAudioData(buffer2);
-
-    // Create a new buffer with combined length
-    const combinedLength = audioBuffer1.length + audioBuffer2.length;
-    const combinedBuffer = new AudioContext().createBuffer(
-      1, // number of channels (mono)
-      combinedLength,
-      audioBuffer1.sampleRate
-    );
-
-    // Get channel data
-    const channelData = combinedBuffer.getChannelData(0);
-
-    // Copy the data from both buffers
-    channelData.set(audioBuffer1.getChannelData(0), 0);
-    channelData.set(audioBuffer2.getChannelData(0), audioBuffer1.length);
-
-    // Convert back to WAV blob
-    const source = new AudioContext().createBufferSource();
-    source.buffer = combinedBuffer;
-
-    // Create a new MediaStream destination
-    const dest = audioContext.createMediaStreamDestination();
-    source.connect(dest);
-    source.start();
-
-    // Create a MediaRecorder to get the combined audio as a blob
-    const mediaRecorder = new MediaRecorder(dest.stream);
-    const chunks: BlobPart[] = [];
-
-    return new Promise((resolve) => {
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: 'audio/wav' }));
-      mediaRecorder.start();
-      setTimeout(() => mediaRecorder.stop(), 100); // Stop after buffer is processed
-    });
   }
 
   static encodeMP3(audioBuffer: AudioBuffer, bitRate: number = 128): Blob {

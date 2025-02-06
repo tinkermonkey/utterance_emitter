@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rollup -c",
     "start": "http-server -c-1 -p 3100",
-    "dev": "nodemon --watch src --ext ts,js,tsx,jsx --exec 'npm run build'",
+    "dev": "http-server -c-1 -p 3100 | nodemon --watch src --ext ts,js,tsx,jsx --exec 'npm run build'",
     "test": "cypress run --browser chromium",
     "test:open": "cypress open"
   },
