@@ -15,6 +15,7 @@
     "@rollup/plugin-node-resolve": "^13.0.0",
     "@rollup/plugin-typescript": "^8.0.0",
     "cypress": "^14.0.2",
+    "dotenv": "^16.4.7",
     "http-server": "^14.0.0",
     "jest": "^29.7.0",
     "nodemon": "^2.0.0",

@@ -1,13 +1,12 @@
 import path from 'path'
 import { defineConfig } from 'cypress'
+import * as dotenv from 'dotenv'
+dotenv.config()
 
 const shortAudioFile = 'cypress/test_data/hello.wav'
-const longTestFile = 'cypress/test_data/hello_and_goodbye.wav'
-const cantinaTestFile = 'cypress/test_data/CantinaBand3.wav'
-let currentAudioFile = shortAudioFile // default audio file
 
 export default defineConfig({
-  projectId: "ya6x96",
+  projectId: process.env.CYPRESS_PROJECT_ID,
   e2e: {
     setupNodeEvents(on, config) {
       // implement node event listeners here
@@ -26,7 +25,7 @@ export default defineConfig({
           launchOptions.args.push('--use-fake-ui-for-media-stream')
           launchOptions.args.push('--use-fake-device-for-media-stream')
           //launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(import.meta.dirname, currentAudioFile)}%%noloop`)
-          launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(import.meta.dirname, currentAudioFile)}`)
+          launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(import.meta.dirname, shortAudioFile)}`)
         }
         return launchOptions
       })
