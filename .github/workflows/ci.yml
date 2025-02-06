@@ -32,14 +32,13 @@ jobs:
         env:
           NODE_ENV: test
 
-      - name: Wait for server to be ready
-        run: sleep 3
+      #- name: Wait for server to be ready
+      #  run: sleep 3
 
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
         with:
           install: false  # already installed
-          build: false    # already built
           wait-on: 'http://localhost:3100'
           wait-on-timeout: 60
           browser: chromium

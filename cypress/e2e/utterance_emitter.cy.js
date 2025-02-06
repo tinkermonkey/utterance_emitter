@@ -3,6 +3,7 @@ describe('Utterance Emitter', () => {
     // Force browser reload between tests
     Cypress.session.clearAllSavedSessions()
     cy.visit('/')
+    cy.viewport(800, 1200)
   })
 
   // The test recording is set to loop and is about 3.5 seconds long
