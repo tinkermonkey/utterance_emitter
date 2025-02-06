@@ -10,9 +10,10 @@ class UtteranceEmitter extends EventEmitter {
   initialized: boolean = false
   audioContext?: AudioContext
   mediaRecorder?: MediaRecorder
+  preRecordingMediaRecorder?: MediaRecorder
   volumeThreshold: number = 7
   audioChunks: Float32Array[] = []
-  preRecordingBuffer: Float32Array[] = []
+  preRecordingChunks: Blob[] = []
   volumeData: number[] = []
   thresholdSignalData: number[] = []
   speakingSignalData: number[] = []
@@ -148,6 +149,26 @@ class UtteranceEmitter extends EventEmitter {
       this.audioChunks.push(event.data)
     }
 
+    // Create a second media recorder for the pre-recording buffer
+    this.preRecordingMediaRecorder = new MediaRecorder(stream);
+    this.preRecordingChunks = [];
+
+    // Accumulate pre-recording chunks
+    this.preRecordingMediaRecorder.ondataavailable = (event) => {
+      this.preRecordingChunks.push(event.data);
+      
+      // Keep only the most recent chunks based on preRecordingDuration
+      const chunkDuration = 100; // Each chunk is roughly 100ms
+      const maxChunks = Math.ceil((this.config.preRecordingDuration || 100) / chunkDuration);
+      
+      while (this.preRecordingChunks.length > maxChunks) {
+        this.preRecordingChunks.shift();
+      }
+    };
+
+    // Start the pre-recording buffer recorder with a timeslice of 100ms
+    this.preRecordingMediaRecorder.start(100);
+
     // Once the recording is signaled to stop because the filtered isSpeaking signal drops to zero, process the audio
     this.mediaRecorder.onstop = () => {
       this.processUtterance()
@@ -246,9 +267,7 @@ class UtteranceEmitter extends EventEmitter {
 
     // Start or stop recording based on filtered signal
     if (speakingSignal && this.mediaRecorder?.state === "inactive") {
-      // TODO: fix this, it inserts garbage data, likely because it's not combining the pre-recording buffer with the recorded chunks
-      //recordedChunks = preRecordingBuffer.slice(); // Include pre-recording buffer
-      this.audioChunks = []
+      this.audioChunks = [...this.preRecordingChunks]; // Include pre-recording buffer
       this.mediaRecorder.start()
     } else if (!speakingSignal && this.mediaRecorder?.state === "recording") {
       this.mediaRecorder.stop()
@@ -311,6 +330,9 @@ class UtteranceEmitter extends EventEmitter {
     }
     if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
       this.mediaRecorder.stop();
+    }
+    if (this.preRecordingMediaRecorder && this.preRecordingMediaRecorder.state !== "inactive") {
+      this.preRecordingMediaRecorder.stop();
     }
   }
 
