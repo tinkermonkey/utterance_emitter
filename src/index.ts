@@ -1,14 +1,18 @@
 import * as lamejs from '@breezystack/lamejs';
-import { EmitterConfig, defaultEmitterConfig, EmitterCanvas, Utterance, SpeakingEvent } from "./types"
+import { EmitterConfig, defaultEmitterConfig, EmitterCanvas, Utterance, SpeakingEvent, UtteranceEvent } from "./types"
 import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
 
+const DEFAULT_VOLUME_THRESHOLD = 7
 const DEFAULT_SIGNAL_LENGTH = 100
 const PRERECORDING_CHUNK_DURATION = 100 // Duration in milliseconds for each audio chunk
 const DEFAULT_CHART_WIDTH = 400
+const DEFAULT_CHART_HEIGHT = 200
 const DEFAULT_CHART_FOREGROUND = 'rgb(0 0 0)'
 const DEFAULT_BACKGROUND_COLOR = 'rgb(200 200 200)'
 const DEFAULT_THRESHOLD_COLOR = 'rgb(255 0 0)'
+const DEFAULT_BAR_WIDTH = 2.5
+const DEFAULT_BAR_MARGIN = 1
 
 class UtteranceEmitter extends EventEmitter {
   config: EmitterConfig
@@ -16,7 +20,7 @@ class UtteranceEmitter extends EventEmitter {
   audioContext?: AudioContext
   mediaRecorder?: MediaRecorder
   preRecordingMediaRecorder?: MediaRecorder
-  volumeThreshold: number = 7
+  volumeThreshold: number = DEFAULT_VOLUME_THRESHOLD
   audioChunks: Float32Array[] = []
   preRecordingChunks: Float32Array[] = []
   volumeData: number[] = []
@@ -33,8 +37,8 @@ class UtteranceEmitter extends EventEmitter {
     threshold?: EmitterCanvas
     speaking?: EmitterCanvas
   }
-  barWidth: number = 2.5
-  barMargin: number = 1
+  barWidth: number = DEFAULT_BAR_WIDTH
+  barMargin: number = DEFAULT_BAR_MARGIN
   animationFrameId?: number
   analysers?: {
     waveform?: AudioAnalyser
@@ -88,7 +92,7 @@ class UtteranceEmitter extends EventEmitter {
     const ctx = el.getContext("2d") as CanvasRenderingContext2D
     const canvas: EmitterCanvas = {
       width: this.config.charts?.width || DEFAULT_CHART_WIDTH,
-      height: this.config.charts?.height || 200,
+      height: this.config.charts?.height || DEFAULT_CHART_HEIGHT,
       el,
       ctx,
     }
@@ -158,21 +162,14 @@ class UtteranceEmitter extends EventEmitter {
     this.preRecordingMediaRecorder = new MediaRecorder(stream);
     this.preRecordingChunks = [];
 
-    // Accumulate pre-recording chunks
+    // Keep some pre-recording buffer to better capture sharp rises in volume
     this.preRecordingMediaRecorder.ondataavailable = (event) => {
       // @ts-ignore
-      this.preRecordingChunks.push(event.data);
-      
-      // Keep only the most recent chunks based on preRecordingDuration
-      const maxChunks = Math.ceil((this.config.preRecordingDuration || 100) / PRERECORDING_CHUNK_DURATION);
-      
-      while (this.preRecordingChunks.length > maxChunks) {
-        this.preRecordingChunks.shift();
-      }
+      this.preRecordingChunks = [event.data]
     };
 
     // Start the pre-recording buffer recorder with a timeslice of 100ms
-    this.preRecordingMediaRecorder.start(PRERECORDING_CHUNK_DURATION);
+    this.preRecordingMediaRecorder.start(this.config.preRecordingDuration || PRERECORDING_CHUNK_DURATION);
 
     // Once the recording is signaled to stop because the filtered isSpeaking signal drops to zero, process the audio
     this.mediaRecorder.onstop = () => {
@@ -261,7 +258,8 @@ class UtteranceEmitter extends EventEmitter {
 
     // Start or stop recording based on filtered signal
     if (speakingSignal && this.mediaRecorder?.state === "inactive") {
-      this.audioChunks = [...this.preRecordingChunks]; // Include pre-recording buffer
+      console.log("Starting media recorder, pre-populating with pre-recording buffer", this.preRecordingChunks)
+      //this.audioChunks = [...this.preRecordingChunks]; // Include pre-recording buffer
       this.mediaRecorder.start()
     } else if (!speakingSignal && this.mediaRecorder?.state === "recording") {
       this.mediaRecorder.stop()
