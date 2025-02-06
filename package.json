@@ -11,7 +11,10 @@
     "mp3",
     "web audio"
   ],
-  "repository": "https://github.com/tinkermonkey/utterance_emitter/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tinkermonkey/utterance_emitter.git"
+  },
   "author": "tinkermonkey",
   "license": "MIT",
   "scripts": {
@@ -48,10 +51,10 @@
     "dist"
   ],
   "exports": {
-    "node" : "./dist/bundle.cjs.js",
-    "require" : "./dist/bundle.cjs.js",
-    "import" : "./dist/bundle.esm.js",
-    "default" : "./dist/bundle.esm.js"
+    "node": "./dist/bundle.cjs.js",
+    "require": "./dist/bundle.cjs.js",
+    "import": "./dist/bundle.esm.js",
+    "default": "./dist/bundle.esm.js"
   },
   "publishConfig": {
     "access": "public"
