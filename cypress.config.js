@@ -24,7 +24,8 @@ export default defineConfig({
           launchOptions.args.push('--allow-file-access-from-files')
           launchOptions.args.push('--use-fake-ui-for-media-stream')
           launchOptions.args.push('--use-fake-device-for-media-stream')
-          launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(import.meta.dirname, currentAudioFile)}%%noloop`)
+          //launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(import.meta.dirname, currentAudioFile)}%%noloop`)
+          launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(import.meta.dirname, currentAudioFile)}`)
         }
         return launchOptions
       })

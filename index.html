@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Utterance Emitter Demo</title>
+    <script type="module">
+      import { UtteranceEmitter } from "./dist/bundle.esm.js";
+
+      const startButton = document.getElementById("startButton");
+      const stopButton = document.getElementById("stopButton");
+      const wavRecordingsList = document.getElementById("wavRecordingsList");
+      const mp3RecordingsList = document.getElementById("mp3RecordingsList");
+
+      const emitter = new UtteranceEmitter({
+        emitRawAudio: true,
+        emitMp3Audio: true,
+        charts: {
+          width: 400,
+          height: 200,
+          barMargin: 1,
+          barWidthNominal: 2.5,
+          waveform:  document.getElementById("waveform"),
+          frequency: document.getElementById("frequency"),
+          volume: document.getElementById("volume"),
+          threshold: document.getElementById("threshold"),
+          speaking: document.getElementById("speaking"),
+        },
+        onUtterance: (utterance) => {
+          if (utterance.mp3) {
+            const url = URL.createObjectURL(utterance.mp3);
+            const li = document.createElement("li");
+            const audio = document.createElement("audio");
+            const downloadLink = document.createElement("a");
+
+            audio.controls = true;
+            audio.src = url;
+            downloadLink.href = url;
+            downloadLink.download = `recording_${mp3RecordingsList.children.length}.mp3`;
+            downloadLink.textContent = `Download recording ${mp3RecordingsList.children.length}`;
+
+            li.appendChild(audio);
+            li.appendChild(downloadLink);
+            mp3RecordingsList.appendChild(li);
+          }
+
+          if(utterance.raw) {
+            const url = URL.createObjectURL(utterance.raw);
+            const li = document.createElement("li");
+            const audio = document.createElement("audio");
+            const downloadLink = document.createElement("a");
+
+            audio.controls = true;
+            audio.src = url;
+            downloadLink.href = url;
+            downloadLink.download = `recording_${wavRecordingsList.children.length}.wav`;
+            downloadLink.textContent = `Download recording ${wavRecordingsList.children.length}`;
+
+            li.appendChild(audio);
+            li.appendChild(downloadLink);
+            wavRecordingsList.appendChild(li);
+          }
+        },
+      });
+
+      startButton.addEventListener("click", () => emitter.start());
+      stopButton.addEventListener("click", () => emitter.stop());
+
+      // Initialize the emitter when the dom is ready
+      document.addEventListener("DOMContentLoaded", () => {
+        emitter.init();
+      });
+    </script>
+  </head>
+  <body>
+    <h1>Utterance Emitter Test</h1>
+    <div style="margin-bottom: 1rem;">
+      <button id="startButton">Start</button>
+      <button id="stopButton">Stop</button>
+    </div>
+    <div>
+      <canvas id="waveform"></canvas>
+      <canvas id="frequency"></canvas>
+      <canvas id="volume"></canvas>
+      <canvas id="threshold"></canvas>
+      <canvas id="speaking"></canvas>
+    </div>
+    <h2>Captured Wav Audio Utterances</h2>
+    <ul id="wavRecordingsList"></ul>
+    <h2>Captured MP3 Audio Utterances</h2>
+    <ul id="mp3RecordingsList"></ul>
+  </body>
+</html>

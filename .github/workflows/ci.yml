@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  cypress-tests:
+    runs-on: ubuntu-24.04
+    container:
+      image: cypress/browsers:22.12.0
+
+    steps:
+      - uses: cypress-io/github-action@v6
+      
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Start test server
+        run: npm start &
+        env:
+          NODE_ENV: test
+
+      - name: Wait for server to be ready
+        run: sleep 3
+
+      - name: Run Cypress tests
+        run: npm run test
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
