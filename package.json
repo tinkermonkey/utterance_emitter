@@ -13,7 +13,7 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
-    "@rollup/plugin-typescript": "^8.0.0",
+    "@rollup/plugin-typescript": "^12.1.2",
     "cypress": "^14.0.2",
     "dotenv": "^16.4.7",
     "http-server": "^14.0.0",
