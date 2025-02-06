@@ -523,6 +523,58 @@ class UtteranceEmitter extends EventEmitter {
     }
   }
 
+  /**
+   * Combines two audio blobs into a single blob
+   * @param blob1 First audio blob
+   * @param blob2 Second audio blob
+   * @returns Promise that resolves to a combined audio blob
+   */
+  static async combineAudioBlobs(blob1: Blob, blob2: Blob): Promise<Blob> {
+    // Convert blobs to array buffers
+    const buffer1 = await blob1.arrayBuffer();
+    const buffer2 = await blob2.arrayBuffer();
+
+    // Create audio contexts and decode the buffers
+    const audioContext = new AudioContext();
+    const audioBuffer1 = await audioContext.decodeAudioData(buffer1);
+    const audioBuffer2 = await audioContext.decodeAudioData(buffer2);
+
+    // Create a new buffer with combined length
+    const combinedLength = audioBuffer1.length + audioBuffer2.length;
+    const combinedBuffer = new AudioContext().createBuffer(
+      1, // number of channels (mono)
+      combinedLength,
+      audioBuffer1.sampleRate
+    );
+
+    // Get channel data
+    const channelData = combinedBuffer.getChannelData(0);
+
+    // Copy the data from both buffers
+    channelData.set(audioBuffer1.getChannelData(0), 0);
+    channelData.set(audioBuffer2.getChannelData(0), audioBuffer1.length);
+
+    // Convert back to WAV blob
+    const source = new AudioContext().createBufferSource();
+    source.buffer = combinedBuffer;
+
+    // Create a new MediaStream destination
+    const dest = audioContext.createMediaStreamDestination();
+    source.connect(dest);
+    source.start();
+
+    // Create a MediaRecorder to get the combined audio as a blob
+    const mediaRecorder = new MediaRecorder(dest.stream);
+    const chunks: BlobPart[] = [];
+
+    return new Promise((resolve) => {
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: 'audio/wav' }));
+      mediaRecorder.start();
+      setTimeout(() => mediaRecorder.stop(), 100); // Stop after buffer is processed
+    });
+  }
+
   static encodeMP3(audioBuffer: AudioBuffer, bitRate: number = 128): Blob {
     const channels = 1 // Assuming mono audio
     const sampleRate = audioBuffer.sampleRate
