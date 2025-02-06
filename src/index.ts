@@ -5,6 +5,7 @@ import { EventEmitter } from "./event-emitter"
 
 const DEFAULT_SIGNAL_LENGTH = 100
 const PRERECORDING_CHUNK_DURATION = 100 // Duration in milliseconds for each audio chunk
+const DEFAULT_CHART_WIDTH = 400
 
 class UtteranceEmitter extends EventEmitter {
   config: EmitterConfig
@@ -83,7 +84,7 @@ class UtteranceEmitter extends EventEmitter {
     console.log("Initializing canvas", el)
     const ctx = el.getContext("2d") as CanvasRenderingContext2D
     const canvas: EmitterCanvas = {
-      width: this.config.charts?.width || 400,
+      width: this.config.charts?.width || DEFAULT_CHART_WIDTH,
       height: this.config.charts?.height || 200,
       el,
       ctx,
@@ -134,7 +135,7 @@ class UtteranceEmitter extends EventEmitter {
 
     // Set the bar width on the charts and max data points
     if (this.config.charts) {
-      const chartWidth = this.config.charts.width || 400
+      const chartWidth = this.config.charts.width || DEFAULT_CHART_WIDTH
       this.barWidth = (chartWidth / (this.analysers.frequency?.bufferLength || DEFAULT_SIGNAL_LENGTH)) * (this.config.charts.barWidthNominal || 2.5);
       this.barMargin = this.config.charts.barMargin || 1
 
