@@ -65,6 +65,11 @@ export type RawAudioUtterance = Blob;
 export type MP3AudioUtterance = Blob;
 export type TextUtterance = string;
 
+export interface UtteranceEvent {
+  utterance: Utterance;
+  timestamp: number;
+}
+
 export type Utterance = {
   raw?: RawAudioUtterance;
   mp3?: MP3AudioUtterance;

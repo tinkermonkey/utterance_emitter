@@ -283,7 +283,7 @@ class UtteranceEmitter extends EventEmitter {
       const audioBuffer = await new AudioContext().decodeAudioData(arrayBuffer)
       const mp3Blob = await UtteranceEmitter.encodeMP3(audioBuffer, this.config.mp3BitRate)
 
-      // Emit the utterance
+      // Create the utterance
       const utterance = {
         timestamp: Date.now()
       } as Utterance
@@ -297,9 +297,14 @@ class UtteranceEmitter extends EventEmitter {
         utterance.text = "TODO: Implement speech-to-text"
       }
 
-      // Emit the utterance
-      console.log("Emitting utterance:", utterance)
-      this.emit('utterance', utterance);
+      // Create and emit the utterance event
+      const utteranceEvent: UtteranceEvent = {
+        utterance,
+        timestamp: Date.now()
+      };
+
+      console.log("Emitting utterance event:", utteranceEvent)
+      this.emit('utterance', utteranceEvent);
       if (this.config.onUtterance) {
         this.config.onUtterance(utterance)
       }
