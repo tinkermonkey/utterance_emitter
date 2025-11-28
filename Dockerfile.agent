@@ -1,0 +1,74 @@
+# ============================================================================
+# Stage 1: Base Environment Setup
+# ============================================================================
+FROM clauditoreum-orchestrator:latest
+
+# The base image already includes:
+# - Claude CLI (REQUIRED - must be present)
+# - Git CLI (REQUIRED - must be present)
+# - GitHub CLI (REQUIRED - must be present)
+# - Python 3.11
+# - Essential build tools
+# - procps package (provides 'ps' command needed by Claude CLI)
+
+USER root
+
+# ============================================================================
+# Stage 2: Install Project-Specific Runtimes
+# ============================================================================
+# Install Node.js 20.x for this JavaScript/TypeScript project
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Enable corepack for package manager support (npm, pnpm, yarn)
+RUN corepack enable
+
+# ============================================================================
+# Stage 3: Pre-install Dependencies (OPTIONAL but RECOMMENDED)
+# ============================================================================
+# Pre-installing dependencies speeds up agent startup time because the agent
+# doesn't have to install them every time it runs.
+
+# WORKDIR should match where the orchestrator will mount the project
+WORKDIR /workspace/utterance_emitter
+
+# OPTION A: Pre-install dependencies (Recommended for fast startup)
+# Copy ONLY the dependency manifests needed for installation
+# DO NOT copy source code - it comes from the runtime mount
+
+# For Node.js/npm projects:
+COPY package.json package-lock.json ./
+RUN npm ci --cache /tmp/npm-cache && \
+    rm -rf /tmp/npm-cache
+
+# ============================================================================
+# Stage 4: Ownership and Permissions
+# ============================================================================
+# Change ownership ONLY of what was installed, NOT source code
+# Source code ownership is handled by the mount
+
+# For pre-installed node_modules:
+RUN chown -R orchestrator:orchestrator /workspace/utterance_emitter/node_modules
+
+# ============================================================================
+# Stage 5: Switch to Runtime User
+# ============================================================================
+USER orchestrator
+
+# ============================================================================
+# Stage 6: Verification (MANDATORY)
+# ============================================================================
+# Verify all critical CLIs are present (from base image)
+RUN claude --version && \
+    git --version && \
+    gh --version
+
+# Verify project-specific tools (if installed):
+RUN node --version && npm --version
+
+# ============================================================================
+# Default command
+# ============================================================================
+CMD ["/bin/bash"]

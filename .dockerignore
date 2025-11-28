@@ -1,0 +1,41 @@
+# Exclude node_modules - they get installed during build
+node_modules/
+
+# Exclude git directory
+.git/
+.github/
+
+# Exclude build artifacts
+dist/
+build/
+.turbo/
+.next/
+
+# Exclude logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Exclude IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Exclude OS files
+.DS_Store
+Thumbs.db
+
+# Exclude test coverage
+coverage/
+.nyc_output/
+
+# Exclude cypress artifacts
+cypress/screenshots/
+cypress/videos/
+
+# Exclude temporary files
+*.tmp
+.cache/
