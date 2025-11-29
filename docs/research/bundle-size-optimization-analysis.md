@@ -1,9 +1,5 @@
 # Bundle Size Optimization Analysis
 
-**Research Phase**: Phase 4 - Documentation
-**Issue**: #40 - Voice Activity Detection Implementation
-**Date**: 2025-11-29
-
 ## Executive Summary
 
 This document analyzes the feasibility and cost-benefit trade-offs of producing a smaller VAD implementation by directly implementing Silero VAD with an optimized ONNX Runtime build as part of this project.
@@ -338,7 +334,7 @@ Use this approach **BY DEFAULT** when:
 
 ## Recommended Strategy
 
-### Phase 1: Lazy Loading + CDN (IMPLEMENT NOW)
+### Stage 1: Lazy Loading + CDN (IMPLEMENT NOW)
 
 **Effort**: 2-4 hours
 **Savings**: Effective 1.5MB reduction from main bundle
@@ -351,30 +347,30 @@ Use this approach **BY DEFAULT** when:
 
 **User Experience**:
 - Main application loads instantly (no VAD overhead)
-- First recording: 1.5MB download + 1-2 second initialization
+- First recording: 1.5MB download + initialization
 - All subsequent use: instant (cached)
 
 ---
 
-### Phase 2: Monitor & Measure (3 MONTHS)
+### Stage 2: Monitor & Measure
 
 **Effort**: 4-8 hours (telemetry setup)
 
 **Implementation**:
 1. Add telemetry for VAD initialization time
-2. Track percentage of users experiencing > 5 second load times
+2. Track percentage of users experiencing slow load times
 3. Collect user feedback on performance
 
-**Decision Point**: After 3 months, evaluate telemetry:
-- **< 5% users affected**: No further optimization needed
-- **5-10% users affected**: Consider ORT format conversion (Phase 3a)
-- **> 10% users affected**: Consider custom ONNX build (Phase 3b)
+**Decision Point**: After collecting sufficient data, evaluate telemetry:
+- **Low percentage affected**: No further optimization needed
+- **Moderate percentage affected**: Consider ORT format conversion (Stage 3a)
+- **High percentage affected**: Consider custom ONNX build (Stage 3b)
 
 ---
 
-### Phase 3a: ORT Format Conversion (IF NEEDED)
+### Stage 3a: ORT Format Conversion (IF NEEDED)
 
-**Trigger**: 5-10% of users experiencing slow load times
+**Trigger**: Moderate percentage of users experiencing slow load times
 **Effort**: 2-4 hours
 **Savings**: 200-500KB (1.5MB → 1-1.3MB)
 **Maintenance**: 1-2 hours per model update
@@ -387,9 +383,9 @@ Use this approach **BY DEFAULT** when:
 
 ---
 
-### Phase 3b: Custom ONNX Build (IF CRITICAL)
+### Stage 3b: Custom ONNX Build (IF CRITICAL)
 
-**Trigger**: > 10% of users experiencing slow load times AND hard budget constraint
+**Trigger**: High percentage of users experiencing slow load times AND hard budget constraint
 **Effort**: 20-40 hours initial + 4-8 hours per version
 **Savings**: 350-650KB (1.5MB → 850KB-1.15MB)
 **Maintenance**: Ongoing burden
@@ -497,7 +493,7 @@ async function handleRequest(request) {
 1. ✅ **Implement lazy loading** (2-4 hours)
 2. ✅ **Configure CDN caching** (1-2 hours)
 3. ✅ **Document bundle size impact** in README and migration guide
-4. ⏸️ **Monitor telemetry** for 3 months
+4. ⏸️ **Monitor telemetry**
 5. ⚠️ **Consider ORT format conversion** only if telemetry shows user impact
 6. ❌ **Do NOT implement custom ONNX build** unless critical user impact proven
 
@@ -518,10 +514,3 @@ If future requirements introduce hard bundle constraints:
 - [Emscripten Documentation](https://emscripten.org/docs/getting_started/downloads.html)
 - [Web Performance: Code Splitting](https://web.dev/code-splitting/)
 - [ADR-001: VAD Library Selection](/workspace/docs/adr/001-vad-library-selection.md)
-
----
-
-**Document Version**: 1.0
-**Last Updated**: 2025-11-29
-**Author**: Senior Software Engineer
-**Reviewers**: Software Architect

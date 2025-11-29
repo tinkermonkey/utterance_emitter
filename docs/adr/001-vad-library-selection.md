@@ -206,13 +206,4 @@ After analyzing the feasibility of custom ONNX Runtime optimization (see researc
 - [@ricky0123/vad-web npm package](https://www.npmjs.com/package/@ricky0123/vad-web)
 - [ONNX Runtime Web Documentation](https://onnxruntime.ai/docs/build/web.html)
 - [Issue #40: Voice Activity Detection Research](https://github.com/your-repo/issues/40)
-- [Phase 2 Design: VAD Integration Architecture](/workspace/docs/design/phase2-vad-integration.md)
-
-## Decision Date
-
-2025-11-29
-
-## Reviewers
-
-- Software Architect
-- Senior Software Engineer
+- [VAD Integration Architecture](/workspace/docs/design/phase2-vad-integration.md)

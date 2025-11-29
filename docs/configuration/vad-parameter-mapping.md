@@ -1,9 +1,5 @@
 # VAD Configuration Parameter Mapping
 
-**Issue**: #40 - Voice Activity Detection Implementation
-**Requirement**: US-8 - Map existing volumeThreshold to VAD library settings
-**Date**: 2025-11-29
-
 ## Overview
 
 This document maps the existing `volumeThreshold` configuration parameter to the new VAD library settings, identifies equivalent sensitivity/threshold parameters, and documents reasonable default values.
@@ -533,9 +529,3 @@ describe("VAD Threshold Behavior", () => {
 - [Silero VAD Parameters](https://github.com/snakers4/silero-vad#parameters)
 - [ADR-001: VAD Library Selection](/workspace/docs/adr/001-vad-library-selection.md)
 - [Migration Guide](/workspace/docs/migration/vad-migration-guide.md)
-
----
-
-**Document Version**: 1.0
-**Last Updated**: 2025-11-29
-**Author**: Senior Software Engineer

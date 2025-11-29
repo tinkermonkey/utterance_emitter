@@ -1,9 +1,5 @@
 # Voice Activity Detection Library Comparison
 
-**Research Phase**: Phase 3 - Library Evaluation
-**Issue**: #40 - Voice Activity Detection Implementation
-**Date**: 2025-11-29
-
 ## Executive Summary
 
 This document provides a comprehensive comparison of Voice Activity Detection (VAD) libraries evaluated for integration into the UtteranceEmitter component. Three primary candidates were assessed against the criteria of minimal code size, accuracy, efficiency, and modularity.
@@ -245,7 +241,7 @@ Custom optimization is justified **only if**:
 1. **Lazy Loading**: Load VAD model only when user starts recording, not at app startup
 2. **CDN Caching**: One-time 1.5MB download per user device
 3. **Measure First**: Deploy @ricky0123/vad-web, collect telemetry on actual load times
-4. **Optimize If Needed**: If bundle size proves problematic, start with ORT format conversion (Phase 1 quick win: 2-4 hours for 200-400KB savings)
+4. **Optimize If Needed**: If bundle size proves problematic, start with ORT format conversion (quick win: 2-4 hours for 200-400KB savings)
 
 #### Rejection Reason
 
@@ -320,32 +316,28 @@ Custom optimization is justified **only if**:
 
 Based on this analysis, the recommended implementation path is:
 
-### Phase 1: Adopt @ricky0123/vad-web (CURRENT PHASE)
-- **Timeline**: Week 1-2
+### Stage 1: Documentation & Decision
 - **Deliverables**:
   - ADR documenting decision
   - Configuration parameter mapping
   - Migration guidance
   - Implementation recommendations
 
-### Phase 2: Integration & Testing
-- **Timeline**: Week 3-4
+### Stage 2: Integration & Testing
 - **Deliverables**:
   - VAD wrapper module
   - Async initialization
   - Fallback logic
   - Unit and integration tests
 
-### Phase 3: Performance Validation
-- **Timeline**: Week 5
+### Stage 3: Performance Validation
 - **Deliverables**:
   - Frame timing measurements
   - Accuracy testing
   - Browser compatibility validation
   - Memory profiling
 
-### Phase 4: Deployment & Monitoring
-- **Timeline**: Week 6+
+### Stage 4: Deployment & Monitoring
 - **Deliverables**:
   - Production deployment
   - Telemetry on bundle size impact
@@ -353,8 +345,8 @@ Based on this analysis, the recommended implementation path is:
 
 ### Future Consideration: Bundle Size Optimization
 - **Trigger**: Telemetry shows > 5% of users experiencing > 5 second load times
-- **Approach**: ORT format conversion (Phase 1 quick win)
-- **Decision Point**: After 3 months of production telemetry
+- **Approach**: ORT format conversion (quick win optimization)
+- **Decision Point**: After sufficient production telemetry collected
 
 ---
 
@@ -367,11 +359,4 @@ Based on this analysis, the recommended implementation path is:
 - [Picovoice Cobra Documentation](https://picovoice.ai/docs/cobra/)
 - [Web Audio VAD GitHub](https://github.com/kdavis-mozilla/vad.js)
 - [ADR-001: VAD Library Selection](/workspace/docs/adr/001-vad-library-selection.md)
-- [Phase 2: VAD Integration Architecture](/workspace/docs/design/phase2-vad-integration.md)
-
----
-
-**Document Version**: 1.0
-**Last Updated**: 2025-11-29
-**Author**: Senior Software Engineer
-**Reviewers**: Software Architect
+- [VAD Integration Architecture](/workspace/docs/design/phase2-vad-integration.md)

@@ -1,9 +1,5 @@
 # VAD Sensitivity Tuning Examples
 
-**Requirement**: FR-6 - Document configurable VAD sensitivity/threshold parameters
-**Issue**: #40 - Voice Activity Detection Implementation
-**Date**: 2025-11-29
-
 ## Overview
 
 This document provides practical examples of VAD sensitivity tuning for different use cases, environments, and speech patterns. Use these examples as starting points and adjust based on your specific acoustic conditions.
@@ -684,9 +680,3 @@ const emitter2 = new UtteranceEmitter({ vadThreshold: 0.7 });
 - [Migration Guide](/workspace/docs/migration/vad-migration-guide.md)
 - [Silero VAD Parameters](https://github.com/snakers4/silero-vad)
 - [@ricky0123/vad-web Documentation](https://github.com/ricky0123/vad)
-
----
-
-**Document Version**: 1.0
-**Last Updated**: 2025-11-29
-**Author**: Senior Software Engineer

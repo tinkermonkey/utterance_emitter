@@ -1,9 +1,5 @@
 # VAD Migration Guide
 
-**Target Audience**: Existing UtteranceEmitter users migrating to VAD-enabled version
-**Issue**: #40 - Voice Activity Detection Implementation
-**Date**: 2025-11-29
-
 ## Overview
 
 This guide helps existing UtteranceEmitter users transition from amplitude-based voice activity detection to the new ML-based VAD (Voice Activity Detection) system powered by Silero VAD.
@@ -726,7 +722,7 @@ If you encounter issues during migration:
 - ✅ **VAD enabled by default**: Improved accuracy out-of-box
 - ✅ **Graceful fallback**: Falls back to amplitude-based if VAD fails
 - ⚠️ **Bundle size**: +1.5MB (mitigated by lazy loading + CDN caching)
-- ⚠️ **Initialization**: One-time 500-2000ms delay when starting stream
+- ⚠️ **Initialization**: One-time initialization delay when starting stream
 
 ### Recommended Migration Path
 
@@ -741,9 +737,3 @@ If you encounter issues during migration:
 1. Review [Configuration Parameter Mapping](/workspace/docs/configuration/vad-parameter-mapping.md)
 2. Explore [Sensitivity Tuning Examples](/workspace/docs/examples/vad-sensitivity-tuning.md)
 3. Read [Implementation Recommendations](/workspace/docs/implementation/vad-implementation-recommendations.md)
-
----
-
-**Document Version**: 1.0
-**Last Updated**: 2025-11-29
-**Author**: Senior Software Engineer

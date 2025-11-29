@@ -1,12 +1,8 @@
 # VAD Implementation Recommendations
 
-**Issue**: #40 - Voice Activity Detection Implementation
-**Phase**: Phase 5 - Integration (Next Steps)
-**Date**: 2025-11-29
-
 ## Overview
 
-This document provides implementation recommendations for integrating @ricky0123/vad-web into the UtteranceEmitter component, referencing the Phase 2 design and incorporating all research findings from Phases 1-4.
+This document provides implementation recommendations for integrating @ricky0123/vad-web into the UtteranceEmitter component, referencing the integration architecture design and incorporating all research findings.
 
 **Target**: Implement production-ready VAD integration with minimal code changes, graceful fallback, and optimal performance.
 
@@ -14,21 +10,21 @@ This document provides implementation recommendations for integrating @ricky0123
 
 ## Implementation Plan Summary
 
-### Phase Overview
+### Implementation Overview
 
-| Phase | Timeline | Deliverables | Status |
-|-------|----------|--------------|--------|
-| **Phase 1: Research** | Complete | Library evaluation, ADR | ✅ Complete |
-| **Phase 2: Design** | Complete | Integration architecture | ✅ Complete |
-| **Phase 3: Evaluation** | Complete | Performance validation | ✅ Complete |
-| **Phase 4: Documentation** | Complete | ADR, migration guide, examples | ✅ Complete |
-| **Phase 5: Integration** | **Next** | VAD implementation | ⏸️ Ready to start |
-| **Phase 6: Testing** | Future | Unit, integration, E2E tests | 📋 Planned |
-| **Phase 7: Deployment** | Future | Production rollout | 📋 Planned |
+| Stage | Deliverables | Status |
+|-------|--------------|--------|
+| **Research** | Library evaluation, ADR | ✅ Complete |
+| **Design** | Integration architecture | ✅ Complete |
+| **Evaluation** | Performance validation | ✅ Complete |
+| **Documentation** | ADR, migration guide, examples | ✅ Complete |
+| **Integration** | VAD implementation | ⏸️ Ready to start |
+| **Testing** | Unit, integration, E2E tests | 📋 Planned |
+| **Deployment** | Production rollout | 📋 Planned |
 
 ---
 
-## Phase 5: Integration Implementation
+## Integration Implementation
 
 ### Objectives
 
@@ -85,7 +81,7 @@ npm list @ricky0123/vad-web
 
 **File**: `/workspace/src/types.ts`
 
-**Current interface** (reference from Phase 2 design):
+**Current interface** (reference from integration architecture design):
 ```typescript
 interface EmitterConfig {
   volumeThreshold: number;
@@ -691,7 +687,7 @@ const emitter = new UtteranceEmitter({
 
 ## Next Steps
 
-### Immediate Actions (Phase 5)
+### Immediate Actions
 
 1. [ ] Install @ricky0123/vad-web: `npm install @ricky0123/vad-web`
 2. [ ] Create `src/vad-wrapper.ts` with VADWrapper abstraction
@@ -706,7 +702,7 @@ const emitter = new UtteranceEmitter({
 9. [ ] Write unit tests for configuration
 10. [ ] Write integration tests for VAD detection
 
-### Future Enhancements (Phase 6+)
+### Future Enhancements
 
 1. [ ] Add telemetry for VAD initialization time
 2. [ ] Implement dynamic threshold adaptation based on environment noise
@@ -726,15 +722,15 @@ const emitter = new UtteranceEmitter({
 - [Configuration Parameter Mapping](/workspace/docs/configuration/vad-parameter-mapping.md)
 - [Migration Guide](/workspace/docs/migration/vad-migration-guide.md)
 - [Sensitivity Tuning Examples](/workspace/docs/examples/vad-sensitivity-tuning.md)
-- [Phase 2 Design: VAD Integration Architecture](/workspace/docs/design/phase2-vad-integration.md) (from software_architect agent output)
+- [VAD Integration Architecture](/workspace/docs/design/phase2-vad-integration.md) (from software_architect agent output)
 
 ---
 
 ## Success Criteria
 
-### Phase 5 Complete When:
+### Documentation Complete When:
 
-- [x] All acceptance criteria from Issue #40 Phase 4 are met:
+- [x] All acceptance criteria from Issue #40 are met:
   - [x] Architecture Decision Record created with full ADR structure
   - [x] Research findings summary documenting all evaluated libraries
   - [x] Bundle size optimization analysis explaining decision
@@ -743,7 +739,7 @@ const emitter = new UtteranceEmitter({
   - [x] Sensitivity tuning examples provided
   - [x] Implementation recommendation provided with clear next steps
 
-### Phase 5 Success Metrics:
+### Integration Success Metrics:
 
 - [ ] @ricky0123/vad-web successfully integrated
 - [ ] All unit tests pass
@@ -752,13 +748,6 @@ const emitter = new UtteranceEmitter({
 - [ ] False positive rate < 10%
 - [ ] False negative rate < 10%
 - [ ] Frame processing time < 16.67ms (60 FPS maintained)
-- [ ] Initialization time < 2000ms (first load)
+- [ ] Initialization time meets performance requirements (first load)
 - [ ] Zero breaking changes to public API
 - [ ] README documentation complete and accurate
-
----
-
-**Document Version**: 1.0
-**Last Updated**: 2025-11-29
-**Author**: Senior Software Engineer
-**Status**: Ready for Phase 5 Implementation
