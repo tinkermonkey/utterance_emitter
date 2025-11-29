@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAD Integration Test - Proof of Concept</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #2196F3;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        .metric-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .metric-value {
+            color: #2196F3;
+            font-family: 'Courier New', monospace;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status.loading {
+            background: #FFF3CD;
+            color: #856404;
+        }
+        .status.success {
+            background: #D4EDDA;
+            color: #155724;
+        }
+        .status.error {
+            background: #F8D7DA;
+            color: #721C24;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 4px 0;
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+        }
+        .log-timestamp {
+            color: #858585;
+        }
+        .log-info {
+            color: #4FC3F7;
+        }
+        .log-success {
+            color: #81C784;
+        }
+        .log-error {
+            color: #E57373;
+        }
+        .log-warn {
+            color: #FFB74D;
+        }
+        .probability-bar {
+            width: 100%;
+            height: 30px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            transition: width 0.1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 VAD Integration Test - Proof of Concept</h1>
+
+        <div class="section">
+            <h2>Browser Compatibility</h2>
+            <div class="metric">
+                <span class="metric-label">User Agent:</span>
+                <span class="metric-value" id="userAgent">-</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">WebAssembly Support:</span>
+                <span class="metric-value" id="wasmSupport">-</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">AudioWorklet Support:</span>
+                <span class="metric-value" id="workletSupport">-</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">MediaStream Support:</span>
+                <span class="metric-value" id="mediaStreamSupport">-</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>VAD Initialization</h2>
+            <div class="metric">
+                <span class="metric-label">Status:</span>
+                <span class="metric-value" id="vadStatus"><span class="status loading">NOT INITIALIZED</span></span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Initialization Time:</span>
+                <span class="metric-value" id="initTime">-</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Model Size:</span>
+                <span class="metric-value" id="modelSize">~1.9 MB (Silero VAD v5)</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Runtime Size:</span>
+                <span class="metric-value" id="runtimeSize">~480 KB (ONNX Runtime Web)</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Total Bundle:</span>
+                <span class="metric-value" id="totalSize">~2.43 MB</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Real-time VAD Monitoring</h2>
+            <button id="initButton">Initialize VAD</button>
+            <button id="startButton" disabled>Start Monitoring</button>
+            <button id="stopButton" disabled>Stop Monitoring</button>
+
+            <div style="margin-top: 20px;">
+                <div class="metric">
+                    <span class="metric-label">Speech Probability:</span>
+                    <span class="metric-value" id="probability">0.00</span>
+                </div>
+                <div class="probability-bar">
+                    <div class="probability-fill" id="probabilityBar" style="width: 0%">
+                        0%
+                    </div>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Speech State:</span>
+                    <span class="metric-value" id="speechState">IDLE</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Frames Processed:</span>
+                    <span class="metric-value" id="framesProcessed">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Performance Metrics</h2>
+            <div class="metric">
+                <span class="metric-label">Avg Processing Time:</span>
+                <span class="metric-value" id="avgProcessing">- ms</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Peak Processing Time:</span>
+                <span class="metric-value" id="peakProcessing">- ms</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Memory Usage:</span>
+                <span class="metric-value" id="memoryUsage">- MB</span>
+            </div>
+        </div>
+
+        <div>
+            <h2>Event Log</h2>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ========================================================================
+        // Browser Capability Detection
+        // ========================================================================
+
+        function checkBrowserCapabilities() {
+            const ua = navigator.userAgent
+            document.getElementById('userAgent').textContent =
+                ua.includes('Chrome') ? 'Chrome' :
+                ua.includes('Firefox') ? 'Firefox' :
+                ua.includes('Safari') ? 'Safari' :
+                ua.includes('Edg') ? 'Edge' : 'Unknown'
+
+            document.getElementById('wasmSupport').textContent =
+                typeof WebAssembly !== 'undefined' ? '✓ Supported' : '✗ Not Supported'
+
+            document.getElementById('workletSupport').textContent =
+                typeof AudioWorklet !== 'undefined' ? '✓ Supported' : '✗ Not Supported'
+
+            document.getElementById('mediaStreamSupport').textContent =
+                navigator.mediaDevices && navigator.mediaDevices.getUserMedia ?
+                '✓ Supported' : '✗ Not Supported'
+
+            log('Browser capabilities checked', 'info')
+        }
+
+        // ========================================================================
+        // Logging Utility
+        // ========================================================================
+
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log')
+            const timestamp = new Date().toLocaleTimeString()
+            const entry = document.createElement('div')
+            entry.className = 'log-entry'
+            entry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-${type}">${message}</span>
+            `
+            logEl.appendChild(entry)
+            logEl.scrollTop = logEl.scrollHeight
+            console.log(`[${type.toUpperCase()}] ${message}`)
+        }
+
+        // ========================================================================
+        // VAD Simulation (since we can't actually import the module here)
+        // ========================================================================
+
+        let isInitialized = false
+        let isRunning = false
+        let framesProcessed = 0
+        let processingTimes = []
+
+        async function simulateVADInit() {
+            log('Starting VAD initialization...', 'info')
+            document.getElementById('vadStatus').innerHTML =
+                '<span class="status loading">INITIALIZING...</span>'
+
+            const startTime = performance.now()
+
+            // Simulate model loading time (500ms-2s)
+            const loadTime = 1200 + Math.random() * 800
+            await new Promise(resolve => setTimeout(resolve, loadTime))
+
+            const endTime = performance.now()
+            const initTime = (endTime - startTime).toFixed(0)
+
+            document.getElementById('initTime').textContent = `${initTime} ms`
+            document.getElementById('vadStatus').innerHTML =
+                '<span class="status success">READY</span>'
+
+            log(`VAD initialized successfully in ${initTime}ms`, 'success')
+            log('Model: Silero VAD v5 (~1.9 MB)', 'info')
+            log('Runtime: ONNX Runtime Web (~480 KB)', 'info')
+            log('Total bundle size: ~2.43 MB', 'warn')
+
+            isInitialized = true
+            document.getElementById('initButton').disabled = true
+            document.getElementById('startButton').disabled = false
+        }
+
+        async function startVADMonitoring() {
+            if (!isInitialized) return
+
+            log('Requesting microphone access...', 'info')
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+                log('Microphone access granted', 'success')
+                log('Starting VAD processing...', 'info')
+
+                isRunning = true
+                document.getElementById('startButton').disabled = true
+                document.getElementById('stopButton').disabled = false
+
+                // Simulate VAD processing loop
+                simulateVADProcessing()
+
+            } catch (error) {
+                log(`Failed to access microphone: ${error.message}`, 'error')
+            }
+        }
+
+        function simulateVADProcessing() {
+            if (!isRunning) return
+
+            framesProcessed++
+
+            // Simulate VAD probability (random for demo)
+            const probability = Math.random() * 0.6 + Math.sin(Date.now() / 1000) * 0.3
+            const clampedProb = Math.max(0, Math.min(1, probability))
+
+            // Update UI
+            document.getElementById('probability').textContent = clampedProb.toFixed(2)
+            document.getElementById('probabilityBar').style.width = (clampedProb * 100) + '%'
+            document.getElementById('probabilityBar').textContent = (clampedProb * 100).toFixed(0) + '%'
+            document.getElementById('framesProcessed').textContent = framesProcessed
+
+            // Simulate speech state
+            const isSpeaking = clampedProb > 0.5
+            document.getElementById('speechState').textContent = isSpeaking ? 'SPEAKING' : 'SILENT'
+
+            // Simulate processing time (1-5ms)
+            const processingTime = 1 + Math.random() * 4
+            processingTimes.push(processingTime)
+            if (processingTimes.length > 100) processingTimes.shift()
+
+            const avgTime = (processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length).toFixed(2)
+            const peakTime = Math.max(...processingTimes).toFixed(2)
+
+            document.getElementById('avgProcessing').textContent = `${avgTime} ms`
+            document.getElementById('peakProcessing').textContent = `${peakTime} ms`
+
+            // Simulate memory usage
+            if (performance.memory) {
+                const memoryMB = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(2)
+                document.getElementById('memoryUsage').textContent = `${memoryMB} MB`
+            }
+
+            // Continue processing (simulating 10fps VAD)
+            setTimeout(simulateVADProcessing, 100)
+        }
+
+        function stopVADMonitoring() {
+            isRunning = false
+            document.getElementById('startButton').disabled = false
+            document.getElementById('stopButton').disabled = true
+            log('VAD monitoring stopped', 'info')
+        }
+
+        // ========================================================================
+        // Event Handlers
+        // ========================================================================
+
+        document.getElementById('initButton').addEventListener('click', simulateVADInit)
+        document.getElementById('startButton').addEventListener('click', startVADMonitoring)
+        document.getElementById('stopButton').addEventListener('click', stopVADMonitoring)
+
+        // Initialize on load
+        checkBrowserCapabilities()
+        log('Test page loaded', 'success')
+        log('This is a simulation - actual VAD requires npm install @ricky0123/vad-web', 'warn')
+    </script>
+</body>
+</html>
