@@ -195,8 +195,7 @@ class UtteranceEmitter extends EventEmitter {
     this.mediaRecorder = new MediaRecorder(stream)
 
     // Accumulate audio chunks as they come in
-    this.mediaRecorder.ondataavailable = (event) => {
-      // @ts-ignore
+    this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
       this.audioChunks.push(event.data)
     }
 
@@ -212,8 +211,7 @@ class UtteranceEmitter extends EventEmitter {
       this.preRecordingChunks = []
 
       // Keep some pre-recording buffer to better capture sharp rises in volume
-      this.preRecordingMediaRecorder.ondataavailable = (event) => {
-        // @ts-ignore
+      this.preRecordingMediaRecorder.ondataavailable = (event: BlobEvent) => {
         this.preRecordingChunks.push(event.data)
 
         // Limit the pre-recording buffer to the pre-recording duration

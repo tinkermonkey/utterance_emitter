@@ -136,7 +136,12 @@ export class BrowserCompatibilityTester {
 
   /**
    * Test WASM module loading
-   * This is a placeholder - actual test would load the ONNX Runtime WASM module
+   *
+   * INTEGRATION POINT: Replace this stub with actual ONNX Runtime WASM loading:
+   * ```typescript
+   * import * as ort from 'onnxruntime-web'
+   * const session = await ort.InferenceSession.create('./silero_vad.onnx')
+   * ```
    */
   static async testWASMLoading(): Promise<WASMLoadingMetrics> {
     const startTime = performance.now()
@@ -175,17 +180,22 @@ export class BrowserCompatibilityTester {
 
   /**
    * Test VAD initialization
-   * This is a placeholder - actual test would initialize @ricky0123/vad-web
+   *
+   * INTEGRATION POINT: Replace this stub with actual VAD initialization:
+   * ```typescript
+   * import { MicVAD } from '@ricky0123/vad-web'
+   * const vad = await MicVAD.new({
+   *   onSpeechStart: () => {},
+   *   onSpeechEnd: () => {}
+   * })
+   * ```
    */
   static async testVADInitialization(): Promise<VADInitializationMetrics> {
     const startTime = performance.now()
 
     try {
-      // Placeholder for actual VAD initialization
-      // In real implementation:
-      // const vad = await MicVAD.new({ ... })
-
-      // Simulate initialization delay
+      // STUB: Actual VAD initialization would happen here
+      // Simulate initialization delay for testing
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       const endTime = performance.now()
@@ -216,6 +226,11 @@ export class BrowserCompatibilityTester {
 
   /**
    * Test VAD processing with sample audio
+   *
+   * INTEGRATION POINT: Replace stub VAD processing with actual library:
+   * ```typescript
+   * const probability = await vad.process(frame)
+   * ```
    */
   static async testVADProcessing(): Promise<{
     success: boolean
@@ -251,8 +266,8 @@ export class BrowserCompatibilityTester {
           frame[j] = channelData[offset + j]
         }
 
-        // Simulate VAD processing (placeholder)
-        // In real implementation: const probability = await vad.process(frame)
+        // STUB: Actual VAD processing would happen here
+        // Simulate processing delay
         await new Promise((resolve) => setTimeout(resolve, 1))
 
         const endTime = performance.now()

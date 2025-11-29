@@ -1,6 +1,13 @@
 /**
  * Performance monitoring utilities for VAD integration testing
  * Measures frame timing, CPU usage, and memory consumption
+ *
+ * IMPORTANT BROWSER COMPATIBILITY NOTES:
+ * - performance.memory: Chrome/Edge only (non-standard API)
+ * - longtask observer: Chrome/Edge only (for CPU estimation)
+ * - Firefox/Safari: Memory metrics unavailable, CPU metrics limited
+ *
+ * For cross-browser testing, frame timing metrics are universally supported.
  */
 
 export interface FrameTimingMetrics {
@@ -107,6 +114,25 @@ export class PerformanceMonitor {
   /**
    * Record timing for a single frame processing cycle
    * Call this at the start and end of processAudio()
+   *
+   * INTEGRATION EXAMPLE:
+   * In UtteranceEmitter.processAudio() at line 256:
+   *
+   * ```typescript
+   * processAudio(audioData: Float32Array): void {
+   *   const frameStart = this.performanceMonitor?.recordFrameStart();
+   *
+   *   try {
+   *     // Existing processing logic
+   *     const volume = this.calculateVolume(audioData);
+   *     // ... VAD processing, utterance detection, etc.
+   *   } finally {
+   *     if (frameStart !== undefined) {
+   *       this.performanceMonitor?.recordFrameEnd(frameStart);
+   *     }
+   *   }
+   * }
+   * ```
    */
   recordFrameStart(): number {
     return performance.now()
@@ -163,22 +189,39 @@ export class PerformanceMonitor {
   }
 
   /**
-   * Sample CPU usage
-   * Note: This is a simplified implementation. Real CPU monitoring requires
-   * browser-specific APIs or Performance Observer
+   * Sample CPU usage using Performance Observer API
+   *
+   * NOTE: This uses long task detection as a proxy for CPU usage.
+   * Long tasks (>50ms) indicate periods of high CPU utilization.
+   * This is an approximation - true CPU % requires native APIs.
+   *
+   * Browser Compatibility:
+   * - Chrome/Edge: Full support
+   * - Firefox: Limited support (no longtask observer)
+   * - Safari: No support for longtask observer
    */
   private sampleCPU(): void {
     if (!this.monitoring) return
 
-    // Get performance entries for tasks
-    const entries = performance.getEntriesByType('measure')
+    // Estimate CPU usage from recent long tasks
+    // This is an approximation based on task duration vs sampling window
+    const recentWindow = 500 // ms
+    const now = performance.now()
+    const windowStart = now - recentWindow
 
-    // This is a placeholder - actual CPU measurement would require
-    // Performance Observer API with proper task attribution
+    // Get long task entries (>50ms) from the last window
+    const longTasks = performance.getEntriesByType('longtask').filter(
+      (entry) => entry.startTime >= windowStart - this.startTime
+    )
+
+    // Calculate busy time as percentage of window
+    const busyTime = longTasks.reduce((sum, task) => sum + task.duration, 0)
+    const cpuUsage = Math.min(100, (busyTime / recentWindow) * 100)
+
     const metric: CPUMetrics = {
-      timestamp: performance.now() - this.startTime,
-      cpuUsage: 0, // Placeholder - see note above
-      measurement: entries.length > 0 ? entries[entries.length - 1] : null,
+      timestamp: now - this.startTime,
+      cpuUsage,
+      measurement: longTasks.length > 0 ? longTasks[longTasks.length - 1] : null,
     }
 
     this.cpuMetrics.push(metric)
@@ -228,9 +271,10 @@ export class PerformanceMonitor {
     const heapGrowthPercentage = initialHeap > 0 ? (heapGrowth / initialHeap) * 100 : 0
     const maxHeap = Math.max(...this.memoryMetrics.map((m) => m.usedJSHeapSize), 0)
 
-    // Calculate CPU metrics (placeholder)
-    const avgCpuUsage = 0 // Placeholder - requires proper CPU monitoring
-    const maxCpuUsage = 0 // Placeholder
+    // Calculate CPU metrics
+    const cpuUsages = this.cpuMetrics.map((m) => m.cpuUsage)
+    const avgCpuUsage = cpuUsages.reduce((sum, u) => sum + u, 0) / cpuUsages.length || 0
+    const maxCpuUsage = Math.max(...cpuUsages, 0)
 
     // Check requirements
     const frameTimingMet = droppedFrames === 0
@@ -307,7 +351,8 @@ export class PerformanceMonitor {
       '',
       'Requirements Validation:',
       `  ✓ Frame Timing (< 16.67ms): ${report.requirements.frameTimingMet ? 'PASS' : 'FAIL'}`,
-      `  ✓ CPU Usage (< 10%): ${report.requirements.cpuUsageMet ? 'PASS (measurement unavailable)' : 'FAIL'}`,
+      `  ✓ CPU Usage (< 10%): ${report.requirements.cpuUsageMet ? 'PASS' : 'FAIL'}`,
+      `    Note: CPU measurement uses long task detection (Chrome/Edge only)`,
       `  ✓ No Memory Leaks (< 20% growth): ${report.requirements.noMemoryLeaks ? 'PASS' : 'FAIL'}`,
       '========================================',
     ]

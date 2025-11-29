@@ -65,13 +65,16 @@ export class AccuracyTester {
 
   /**
    * Create standard test cases for VAD evaluation
+   *
+   * NOTE: Test audio files should be created per docs/TEST_AUDIO_GUIDE.md
+   * and placed in the test_data/ directory. Update paths below if needed.
    */
   static createStandardTestSuite(): AudioTestCase[] {
     return [
       {
         name: 'quiet-speech',
         description: 'Quiet speech in silent environment',
-        audioFile: 'cypress/test_data/quiet_speech.wav',
+        audioFile: 'test_data/quiet_speech.wav',
         noiseCondition: 'quiet',
         expectedSegments: [
           { startTime: 0, endTime: 500, isSpeech: false },
@@ -82,7 +85,7 @@ export class AccuracyTester {
       {
         name: 'normal-speech',
         description: 'Normal volume speech',
-        audioFile: 'cypress/test_data/hello.wav',
+        audioFile: 'test_data/hello.wav',
         noiseCondition: 'normal',
         expectedSegments: [
           { startTime: 0, endTime: 200, isSpeech: false },
@@ -93,7 +96,7 @@ export class AccuracyTester {
       {
         name: 'keyboard-typing',
         description: 'Speech with keyboard typing noise',
-        audioFile: 'cypress/test_data/speech_with_typing.wav',
+        audioFile: 'test_data/speech_with_typing.wav',
         noiseCondition: 'noisy',
         expectedSegments: [
           { startTime: 0, endTime: 500, isSpeech: false }, // Typing only
@@ -106,7 +109,7 @@ export class AccuracyTester {
       {
         name: 'hvac-noise',
         description: 'Speech with HVAC background noise',
-        audioFile: 'cypress/test_data/speech_with_hvac.wav',
+        audioFile: 'test_data/speech_with_hvac.wav',
         noiseCondition: 'noisy',
         expectedSegments: [
           { startTime: 0, endTime: 1000, isSpeech: false }, // HVAC only
@@ -117,7 +120,7 @@ export class AccuracyTester {
       {
         name: 'multiple-utterances',
         description: 'Multiple utterances with pauses',
-        audioFile: 'cypress/test_data/hello_hello.wav',
+        audioFile: 'test_data/hello_hello.wav',
         noiseCondition: 'normal',
         expectedSegments: [
           { startTime: 0, endTime: 300, isSpeech: false },
