@@ -13,6 +13,9 @@
  */
 
 import { createVADWrapper, type VADWrapper, type VADWrapperConfig } from "./vad-wrapper"
+import type { EmitterConfig } from "../src/types/emitter-config"
+import type { SpeakingEvent } from "../src/types/events"
+import { UtteranceEmitter } from "../src/index"
 
 // ========================================================================
 // Configuration Extension
@@ -127,7 +130,7 @@ export class UtteranceEmitterWithVAD extends UtteranceEmitter {
       })
 
       // Start VAD processing
-      await this.vad.start(stream)
+      await this.vad.start()
 
       const initTime = performance.now() - startTime
       console.log(`[UtteranceEmitterWithVAD] VAD initialized in ${initTime.toFixed(0)}ms`)
@@ -280,42 +283,3 @@ export class UtteranceEmitterWithVAD extends UtteranceEmitter {
     }
   }
 }
-
-// ========================================================================
-// Usage Example
-// ========================================================================
-
-/*
-// Example 1: Use VAD with default settings
-const emitter = new UtteranceEmitterWithVAD({
-  vadEnabled: true, // Default
-})
-
-await emitter.start() // VAD initializes automatically
-
-// Example 2: Custom VAD configuration
-const emitter = new UtteranceEmitterWithVAD({
-  vadEnabled: true,
-  vadConfig: {
-    positiveSpeechThreshold: 0.7, // More conservative (fewer false positives)
-    negativeSpeechThreshold: 0.4,
-    minSpeechFrames: 15, // 150ms minimum speech
-  },
-  vadFallback: true, // Fall back to amplitude if VAD fails
-})
-
-// Example 3: Disable VAD (backward compatible)
-const emitter = new UtteranceEmitterWithVAD({
-  vadEnabled: false,
-  volumeThreshold: 40, // Use amplitude-based detection
-})
-
-// Example 4: Check VAD status
-const status = emitter.getVADStatus()
-console.log({
-  enabled: status.enabled,
-  ready: status.ready,
-  usingFallback: status.usingFallback,
-  probability: status.probability,
-})
-*/

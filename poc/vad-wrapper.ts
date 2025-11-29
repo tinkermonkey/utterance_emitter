@@ -55,6 +55,12 @@ export interface VADWrapperConfig {
    * Default: true
    */
   useWorklet?: boolean
+
+  /**
+   * Custom path to VAD worklet bundle
+   * Default: Auto-detects based on environment (node_modules or CDN)
+   */
+  workletPath?: string
 }
 
 export interface VADWrapper {
@@ -66,10 +72,10 @@ export interface VADWrapper {
   initialize(): Promise<void>
 
   /**
-   * Start VAD processing on audio stream
-   * @param stream MediaStream from getUserMedia()
+   * Start VAD processing
+   * Note: MicVAD handles its own stream acquisition via getUserMedia()
    */
-  start(stream: MediaStream): Promise<void>
+  start(): Promise<void>
 
   /**
    * Stop VAD processing and release resources
@@ -103,6 +109,24 @@ export interface VADWrapper {
    * @param callback Function called with probability [0-1] on each frame
    */
   onProbabilityUpdate(callback: (probability: number) => void): void
+
+  /**
+   * Remove speech start callback
+   * @param callback Function to remove
+   */
+  removeSpeechStartListener(callback: () => void): void
+
+  /**
+   * Remove speech end callback
+   * @param callback Function to remove
+   */
+  removeSpeechEndListener(callback: () => void): void
+
+  /**
+   * Remove probability update callback
+   * @param callback Function to remove
+   */
+  removeProbabilityListener(callback: (probability: number) => void): void
 }
 
 export class SileroVADWrapper implements VADWrapper {
@@ -122,7 +146,25 @@ export class SileroVADWrapper implements VADWrapper {
       minSpeechFrames: config.minSpeechFrames ?? 10,
       redemptionFrames: config.redemptionFrames ?? 8,
       useWorklet: config.useWorklet ?? true,
+      workletPath:
+        config.workletPath ??
+        this.detectWorkletPath(),
     }
+  }
+
+  /**
+   * Auto-detect worklet path based on environment
+   */
+  private detectWorkletPath(): string {
+    // Try to detect if running from node_modules or CDN
+    if (typeof window !== "undefined" && window.location) {
+      const origin = window.location.origin
+      // Default to CDN path for production, node_modules for development
+      return origin.includes("localhost") || origin.includes("127.0.0.1")
+        ? "/node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js"
+        : "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.7/dist/vad.worklet.bundle.min.js"
+    }
+    return "/node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js"
   }
 
   get isReady(): boolean {
@@ -159,7 +201,7 @@ export class SileroVADWrapper implements VADWrapper {
 
         // Processing mode
         workletURL: this.config.useWorklet
-          ? "/node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js"
+          ? this.config.workletPath
           : undefined,
 
         // Event handlers
@@ -199,12 +241,12 @@ export class SileroVADWrapper implements VADWrapper {
     }
   }
 
-  async start(stream: MediaStream): Promise<void> {
+  async start(): Promise<void> {
     if (!this._isReady || !this.vad) {
       throw new Error("VAD not initialized. Call initialize() first.")
     }
 
-    console.log("[VADWrapper] Starting VAD on audio stream")
+    console.log("[VADWrapper] Starting VAD")
     await this.vad.start()
   }
 
@@ -241,6 +283,27 @@ export class SileroVADWrapper implements VADWrapper {
 
   onProbabilityUpdate(callback: (probability: number) => void): void {
     this.probabilityCallbacks.push(callback)
+  }
+
+  removeSpeechStartListener(callback: () => void): void {
+    const index = this.speechStartCallbacks.indexOf(callback)
+    if (index > -1) {
+      this.speechStartCallbacks.splice(index, 1)
+    }
+  }
+
+  removeSpeechEndListener(callback: () => void): void {
+    const index = this.speechEndCallbacks.indexOf(callback)
+    if (index > -1) {
+      this.speechEndCallbacks.splice(index, 1)
+    }
+  }
+
+  removeProbabilityListener(callback: (probability: number) => void): void {
+    const index = this.probabilityCallbacks.indexOf(callback)
+    if (index > -1) {
+      this.probabilityCallbacks.splice(index, 1)
+    }
   }
 }
 

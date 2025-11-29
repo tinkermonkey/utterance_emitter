@@ -1,4 +1,4 @@
-# Phase 1 Evaluation Report: @ricky0123/vad-web Proof of Concept
+# VAD Evaluation Report: @ricky0123/vad-web Proof of Concept
 
 ## Executive Summary
 
