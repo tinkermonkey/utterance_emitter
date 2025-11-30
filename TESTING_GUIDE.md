@@ -1,17 +1,17 @@
 # VAD Integration Testing Guide
 
-This guide documents the comprehensive testing procedures for Phase 3 of the VAD integration, covering performance validation, accuracy measurement, browser compatibility testing, and memory leak detection.
+This guide documents the comprehensive testing procedures for the VAD integration, covering performance validation, accuracy measurement, browser compatibility testing, and memory leak detection.
 
 ## Overview
 
-Phase 3 validates that the VAD integration meets all functional requirements:
+This guide validates that the VAD integration meets all functional requirements:
 
-- **FR-2**: Processing latency under 10ms per audio frame, non-blocking execution
-- **FR-7**: Cross-browser compatibility (Chrome, Firefox, Safari, Edge)
-- **FR-9**: Efficient resource management and memory leak prevention
-- **US-3**: Browser compatibility with WASM loading < 2 seconds
-- **US-10**: Frame processing < 16.67ms at 60 FPS
-- **US-11**: Improved accuracy over amplitude-based detection
+- **Processing Latency**: Under 10ms per audio frame, non-blocking execution
+- **Cross-browser Compatibility**: Chrome, Firefox, Safari, Edge
+- **Resource Management**: Efficient resource management and memory leak prevention
+- **WASM Loading**: < 2 seconds
+- **Frame Processing**: < 16.67ms at 60 FPS
+- **Accuracy**: Improved accuracy over amplitude-based detection
 
 ## Testing Framework Components
 
@@ -316,7 +316,7 @@ Increase from Previous: 534.78 KB (+1272.8%)
 
 ## Test Execution Plan
 
-### Phase 3.1: Performance Validation
+### Performance Validation
 
 **Objective**: Verify frame timing and CPU usage meet requirements
 
@@ -335,7 +335,7 @@ Increase from Previous: 534.78 KB (+1272.8%)
    - [ ] P95 and P99 latency documented
    - [ ] CPU usage < 10% (if measurable)
 
-### Phase 3.2: Accuracy Validation
+### Accuracy Validation
 
 **Objective**: Demonstrate improved accuracy over amplitude-based detection
 
@@ -354,7 +354,7 @@ Increase from Previous: 534.78 KB (+1272.8%)
    - [ ] F1 score improvement documented
    - [ ] Comparison report generated for all 5 test cases
 
-### Phase 3.3: Browser Compatibility
+### Browser Compatibility
 
 **Objective**: Verify VAD works across target browsers
 
@@ -375,7 +375,7 @@ Increase from Previous: 534.78 KB (+1272.8%)
    - [ ] WASM loading < 2 seconds in all browsers
    - [ ] No initialization errors
 
-### Phase 3.4: Memory Leak Detection
+### Memory Leak Detection
 
 **Objective**: Verify no memory leaks during continuous operation
 
@@ -394,7 +394,7 @@ Increase from Previous: 534.78 KB (+1272.8%)
    - [ ] GC observed during session
    - [ ] Leak detection report generated
 
-### Phase 3.5: Bundle Size Impact
+### Bundle Size Impact
 
 **Objective**: Document bundle size increase from VAD integration
 
