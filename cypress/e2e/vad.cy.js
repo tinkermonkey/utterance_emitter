@@ -7,37 +7,33 @@ describe('VAD Performance', () => {
       const { UtteranceEmitter, PerformanceMonitor } = win
       const monitor = new PerformanceMonitor()
       const emitter = new UtteranceEmitter({
-        enablePerformanceMonitoring: true
+        enablePerformanceMonitoring: true,
+        vadConfig: {
+          // Enable VAD
+          positiveSpeechThreshold: 0.5,
+          // Use local dist path where we copied the assets
+          baseAssetPath: "/dist/"
+        }
       })
 
-      // We need to stub getUserMedia to avoid permission prompts and use fake audio
-      // But Cypress handles this via launch args in config.
-      // However, we also need to ensure the browser supports the APIs.
-
-      // Note: In a real test environment, we might need to mock the audio stream
-      // if the browser doesn't support fake audio or if we want deterministic results.
-      // For now, we rely on the browser's behavior.
-
-      // Start monitoring
-      // Note: emitter.start() calls performanceMonitor.start() internally if enabled in config
-      // But here we are creating a separate monitor instance for the test?
-      // Wait, the guide says:
-      // const monitor = new PerformanceMonitor()
-      // const emitter = new UtteranceEmitter()
-      // monitor.start()
-      // emitter.start()
-      // This implies external monitoring.
-      // But I implemented internal monitoring in UtteranceEmitter.
-      // Let's use the internal one if possible, or just follow the guide's pattern if I exported PerformanceMonitor.
-
-      // If I use the internal one:
-      emitter.start()
+      // Start emitter (initializes VAD)
+      // Note: start() is async now
+      emitter.start().then(() => {
+        // Verify VAD initialization
+        expect(emitter.vadWrapper).to.exist
+        // We can't easily check isReady because it's private/protected or we need to wait
+        // But start() waits for VAD initialization if vadConfig is present
+      })
 
       // Wait for some time to record frames
-      // 5 minutes is too long for a quick test, let's do 10 seconds
       cy.wait(10000)
 
-      emitter.stop()
+      cy.wrap(null).then(() => {
+         emitter.stop()
+         // Verify VAD was actually used
+         expect(emitter.vadWrapper).to.exist
+         expect(emitter.vadWrapper.isReady).to.be.true
+      })
       
       // Access the internal monitor report
       // Since I didn't expose the internal monitor publicly, I might need to rely on console logs

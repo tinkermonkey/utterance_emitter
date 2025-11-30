@@ -1,23 +1,29 @@
 /**
- * VAD Wrapper - Proof of Concept
+ * VAD Wrapper
  *
- * This module demonstrates integration of @ricky0123/vad-web (Silero VAD) with the
+ * This module integrates @ricky0123/vad-web (Silero VAD) with the
  * existing audio processing pipeline. It provides a clean abstraction over the VAD
  * library with proper error handling and graceful degradation.
- *
- * Bundle Size Impact:
- * - @ricky0123/vad-web: ~50KB (wrapper code)
- * - onnxruntime-web: ~480KB (WASM runtime)
- * - Silero VAD v5 model: ~1.9MB (lazy-loaded)
- * Total: ~2.43MB (vs 500KB initial estimate)
- *
- * Performance Characteristics:
- * - Initialization: 500ms-2s (one-time, async)
- * - Processing latency: 1-5ms per frame (AudioWorklet offloaded)
- * - Memory overhead: ~10-12MB (model + runtime)
  */
 
-import { MicVAD, type MicVADOptions } from "@ricky0123/vad-web"
+import { MicVAD, type RealTimeVADOptions } from "@ricky0123/vad-web"
+
+// Define locally to avoid deep import issues
+interface SpeechProbabilities {
+  notSpeech: number;
+  isSpeech: number;
+}
+
+// Minimal interface for ONNX Runtime configuration
+interface Ort {
+  env: {
+    wasm: {
+      numThreads: number
+      simd: boolean
+      wasmPaths?: string | object
+    }
+  }
+}
 
 export interface VADWrapperConfig {
   /**
@@ -40,14 +46,14 @@ export interface VADWrapperConfig {
    * Helps filter out transient noises
    * Default: 250ms
    */
-  minSpeechFrames?: number
+  minSpeechMs?: number
 
   /**
-   * Number of redemption frames after speech ends
+   * Number of redemption milliseconds after speech ends
    * Prevents premature cutoff during brief pauses
-   * Default: 8 frames (~80ms at 10fps)
+   * Default: 80ms
    */
-  redemptionFrames?: number
+  redemptionMs?: number
 
   /**
    * Whether to use AudioWorklet mode (recommended)
@@ -57,10 +63,10 @@ export interface VADWrapperConfig {
   useWorklet?: boolean
 
   /**
-   * Custom path to VAD worklet bundle
+   * Custom base path for VAD assets (worklet, wasm, onnx)
    * Default: Auto-detects based on environment (node_modules or CDN)
    */
-  workletPath?: string
+  baseAssetPath?: string
 }
 
 export interface VADWrapper {
@@ -143,28 +149,28 @@ export class SileroVADWrapper implements VADWrapper {
     this.config = {
       positiveSpeechThreshold: config.positiveSpeechThreshold ?? 0.5,
       negativeSpeechThreshold: config.negativeSpeechThreshold ?? 0.35,
-      minSpeechFrames: config.minSpeechFrames ?? 10,
-      redemptionFrames: config.redemptionFrames ?? 8,
+      minSpeechMs: config.minSpeechMs ?? 250,
+      redemptionMs: config.redemptionMs ?? 80,
       useWorklet: config.useWorklet ?? true,
-      workletPath:
-        config.workletPath ??
-        this.detectWorkletPath(),
+      baseAssetPath:
+        config.baseAssetPath ??
+        this.detectBaseAssetPath(),
     }
   }
 
   /**
-   * Auto-detect worklet path based on environment
+   * Auto-detect base asset path based on environment
    */
-  private detectWorkletPath(): string {
+  private detectBaseAssetPath(): string {
     // Try to detect if running from node_modules or CDN
     if (typeof window !== "undefined" && window.location) {
       const origin = window.location.origin
       // Default to CDN path for production, node_modules for development
       return origin.includes("localhost") || origin.includes("127.0.0.1")
-        ? "/node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js"
-        : "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.7/dist/vad.worklet.bundle.min.js"
+        ? "/node_modules/@ricky0123/vad-web/dist/"
+        : "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.7/dist/"
     }
-    return "/node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js"
+    return "/node_modules/@ricky0123/vad-web/dist/"
   }
 
   get isReady(): boolean {
@@ -185,24 +191,28 @@ export class SileroVADWrapper implements VADWrapper {
     console.log("[VADWrapper] Initializing Silero VAD...")
 
     try {
-      const options: Partial<MicVADOptions> = {
+      const options: Partial<RealTimeVADOptions> = {
         // Model loading configuration
-        ortConfig: (ort) => {
+        ortConfig: (ortInstance: any) => {
+          const ort = ortInstance as Ort
           // Configure ONNX Runtime for optimal browser performance
           ort.env.wasm.numThreads = 1
           ort.env.wasm.simd = true
+          
+          // Set WASM paths if baseAssetPath is provided
+          if (this.config.baseAssetPath) {
+            ort.env.wasm.wasmPaths = this.config.baseAssetPath
+          }
         },
 
         // VAD configuration
         positiveSpeechThreshold: this.config.positiveSpeechThreshold,
         negativeSpeechThreshold: this.config.negativeSpeechThreshold,
-        minSpeechFrames: this.config.minSpeechFrames,
-        redemptionFrames: this.config.redemptionFrames,
+        minSpeechMs: this.config.minSpeechMs,
+        redemptionMs: this.config.redemptionMs,
 
-        // Processing mode
-        workletURL: this.config.useWorklet
-          ? this.config.workletPath
-          : undefined,
+        // Asset configuration
+        baseAssetPath: this.config.baseAssetPath,
 
         // Event handlers
         onSpeechStart: () => {
@@ -215,7 +225,7 @@ export class SileroVADWrapper implements VADWrapper {
           this.speechEndCallbacks.forEach((cb) => cb())
         },
 
-        onFrameProcessed: (probabilities) => {
+        onFrameProcessed: (probabilities: SpeechProbabilities) => {
           // probabilities.isSpeech is the probability [0-1]
           const probability = probabilities.isSpeech
           this.probabilityCallbacks.forEach((cb) => cb(probability))

@@ -51,7 +51,7 @@ The *UtteranceEmitter* library supports two methods for detecting when someone i
 ### 1. Voice Activity Detection (VAD) - Recommended
 This method uses the `@ricky0123/vad-web` library (Silero VAD) to detect human speech using machine learning. This is significantly more accurate than simple volume analysis, especially in noisy environments or with non-speech background noise (typing, HVAC, etc.).
 
-To use this method, ensure you have the necessary VAD worklet files available (see `vadWorkletPath` in configuration).
+To use this method, provide a `vadConfig` object in the configuration.
 
 ### 2. Amplitude-Based Detection (Fallback)
 This is an unsophisticated but lightweight algorithm that works reasonably well in quiet environments:
@@ -127,7 +127,12 @@ The `EmitterConfig` interface provides several options to customize the behavior
 - **emitText**: Whether to emit text data. Default is `false`.
 - **sampleRate**: The sample rate to use for audio recording. Default is `44100`.
 - **mp3BitRate**: The bit rate in kbps to use for MP3 encoding. Default is `128`.
-- **vadWorkletPath**: Optional path to the VAD worklet script. If not provided, the library attempts to load it from default locations.
+- **vadConfig**: Optional configuration for VAD (Voice Activity Detection). If provided, VAD is enabled.
+  - **positiveSpeechThreshold**: Probability threshold for voice detection [0-1]. Default `0.5`.
+  - **negativeSpeechThreshold**: Probability threshold for silence detection [0-1]. Default `0.35`.
+  - **minSpeechMs**: Minimum speech duration in milliseconds. Default `250`.
+  - **redemptionMs**: Redemption milliseconds after speech ends. Default `80`.
+  - **baseAssetPath**: Custom base path for VAD assets.
 - **enablePerformanceMonitoring**: Whether to enable internal performance monitoring (frame timing, etc.). Default is `false`.
 - **charts**: An optional object to configure the charts. The object can have the following properties:
   - **width**: The width of the charts. Default is `400`.

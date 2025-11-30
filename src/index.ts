@@ -9,6 +9,7 @@ import {
 import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
 import { PerformanceMonitor } from "./performance-monitor"
+import { createVADWrapper, VADWrapper } from "./vad-wrapper"
 
 const enablePreRecording = false
 const preRecordingChunkDuration = 10 // Duration in milliseconds for each audio chunks
@@ -52,6 +53,8 @@ class UtteranceEmitter extends EventEmitter {
   volumeThreshold: number = DEFAULT_VOLUME_THRESHOLD
   aboveThreshold: boolean = false
   belowThresholdDuration: number = 0
+  vadWrapper?: VADWrapper
+  vadSpeaking: boolean = false
 
   // Audio signal data
   audioChunks: Blob[] = []
@@ -96,8 +99,28 @@ class UtteranceEmitter extends EventEmitter {
    * Initialize the audio context and any charts that are configured
    * Doesn't start recording audio, doesn't need to be called before start()
    */
-  init(): void {
+  async init(): Promise<void> {
     console.log("Initializing utterance emitter")
+
+    // Initialize VAD if configured
+    if (this.config.vadConfig) {
+      console.log("Initializing VAD with config:", this.config.vadConfig)
+      const wrapper = await createVADWrapper(this.config.vadConfig)
+      if (wrapper) {
+        this.vadWrapper = wrapper
+        
+        // Setup VAD event listeners
+        this.vadWrapper.onSpeechStart(() => {
+          console.log("VAD: Speech started")
+          this.vadSpeaking = true
+        })
+        
+        this.vadWrapper.onSpeechEnd(() => {
+          console.log("VAD: Speech ended")
+          this.vadSpeaking = false
+        })
+      }
+    }
 
     // If there are charts configured, initialize them
     if (this.config.charts) {
@@ -147,15 +170,20 @@ class UtteranceEmitter extends EventEmitter {
   /**
    * Start recording audio from the microphone and emitting utterances
    */
-  start(): void {
+  async start(): Promise<void> {
     console.log("Starting utterance emitter")
     if (!this.initialized) {
-      this.init()
+      await this.init()
     }
 
     if (this.config.enablePerformanceMonitoring) {
       this.performanceMonitor = new PerformanceMonitor()
       this.performanceMonitor.start()
+    }
+
+    // Start VAD if initialized
+    if (this.vadWrapper) {
+      await this.vadWrapper.start()
     }
 
     navigator.mediaDevices
@@ -270,22 +298,31 @@ class UtteranceEmitter extends EventEmitter {
     const thresholdSignal = average > this.volumeThreshold ? 1 : 0
     this.updateThresholdHistory(thresholdSignal)
 
-    // Calculate the speaking signal by filtering the threshold signal
-    if (average > this.volumeThreshold) {
-      this.aboveThreshold = true
-      this.belowThresholdDuration = 0
+    // Calculate the speaking signal
+    let speakingSignal = 0
+    
+    if (this.vadWrapper) {
+      // Use VAD state if available
+      speakingSignal = this.vadSpeaking ? 1 : 0
     } else {
-      this.belowThresholdDuration += 16.67 // Approximate duration of one frame at 60 FPS
-      if (
-        this.belowThresholdDuration >=
-        (this.config.quietPeriod || DEFAULT_QUET_PERIOD)
-      ) {
-        this.aboveThreshold = false
+      // Fallback to amplitude-based detection
+      if (average > this.volumeThreshold) {
+        this.aboveThreshold = true
+        this.belowThresholdDuration = 0
+      } else {
+        this.belowThresholdDuration += 16.67 // Approximate duration of one frame at 60 FPS
+        if (
+          this.belowThresholdDuration >=
+          (this.config.quietPeriod || DEFAULT_QUET_PERIOD)
+        ) {
+          this.aboveThreshold = false
+        }
       }
+      speakingSignal = this.aboveThreshold ? 1 : 0
     }
 
     // Store the speaking signal
-    const speakingSignal = this.aboveThreshold ? 1 : 0
+    // const speakingSignal = this.aboveThreshold ? 1 : 0 // Removed old line
 
     this.handleSpeakingEvents(speakingSignal)
     this.updateSpeakingHistory(speakingSignal)
@@ -422,6 +459,11 @@ class UtteranceEmitter extends EventEmitter {
 
   stop(): void {
     console.log("Stopping utterance emitter")
+
+    if (this.vadWrapper) {
+      this.vadWrapper.stop()
+      // Don't destroy here if we want to restart, but for now let's just stop
+    }
 
     if (this.audioContext) {
       this.audioContext.close()

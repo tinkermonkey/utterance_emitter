@@ -1,6 +1,6 @@
 {
   "name": "@tinkermonkey/utterance-emitter",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A Node.js library for recording audio in a browser, performing speaker detection, and emitting chunks of mp3 encoded audio representing utterances for further processing.",
   "keywords": [
     "audio",
