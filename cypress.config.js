@@ -19,7 +19,7 @@ export default defineConfig({
 
       on('before:browser:launch', (browser = {}, launchOptions) => {
         // `args` is an array of arguments passed to the browser
-        if (browser.name === 'chromium') {
+        if (browser.name === 'chromium' || browser.name === 'chrome') {
           launchOptions.args.push('--no-sandbox')
           launchOptions.args.push('--allow-file-access-from-files')
           launchOptions.args.push('--use-fake-ui-for-media-stream')
@@ -31,6 +31,6 @@ export default defineConfig({
       })
     },
     baseUrl: 'http://localhost:3100',
-    browser: 'chromium'
+    browser: 'chrome'
   },
 })

@@ -5,11 +5,13 @@
  * Measures production build size and compares before/after VAD integration
  */
 
-const fs = require('fs')
-const path = require('path')
-const { execSync } = require('child_process')
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-const __dirname = __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const DIST_DIR = path.resolve(__dirname, '../dist')
 const REPORT_FILE = path.resolve(__dirname, '../bundle-size-report.json')

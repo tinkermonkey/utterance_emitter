@@ -22,6 +22,7 @@
     "start": "http-server -c-1 -p 3100",
     "dev": "http-server -c-1 -p 3100 | nodemon --watch src --ext ts,js,tsx,jsx --exec 'npm run build'",
     "test": "echo \"No tests configured\"",
+    "test:e2e": "cypress run --browser chrome",
     "test:bundle-size": "npm run build && node scripts/measure-bundle-size.js"
   },
   "devDependencies": {
@@ -41,7 +42,8 @@
     "web-audio-test-api": "^0.5.2"
   },
   "dependencies": {
-    "@breezystack/lamejs": "^1.2.7"
+    "@breezystack/lamejs": "^1.2.7",
+    "@ricky0123/vad-web": "^0.0.30"
   },
   "type": "module",
   "main": "dist/bundle.cjs.js",

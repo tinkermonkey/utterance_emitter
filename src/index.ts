@@ -8,6 +8,7 @@ import {
 } from "./types"
 import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
+import { PerformanceMonitor } from "./performance-monitor"
 
 const enablePreRecording = false
 const preRecordingChunkDuration = 10 // Duration in milliseconds for each audio chunks
@@ -53,8 +54,8 @@ class UtteranceEmitter extends EventEmitter {
   belowThresholdDuration: number = 0
 
   // Audio signal data
-  audioChunks: Float32Array[] = []
-  preRecordingChunks: Float32Array[] = []
+  audioChunks: Blob[] = []
+  preRecordingChunks: Blob[] = []
 
   // Processed signal data
   volumeData: number[] = []
@@ -78,6 +79,7 @@ class UtteranceEmitter extends EventEmitter {
   barWidth: number = DEFAULT_BAR_WIDTH
   barMargin: number = DEFAULT_BAR_MARGIN
   animationFrameId?: number
+  performanceMonitor?: PerformanceMonitor
 
   /**
    * Create a new UtteranceEmitter with the provided configuration
@@ -149,6 +151,11 @@ class UtteranceEmitter extends EventEmitter {
     console.log("Starting utterance emitter")
     if (!this.initialized) {
       this.init()
+    }
+
+    if (this.config.enablePerformanceMonitoring) {
+      this.performanceMonitor = new PerformanceMonitor()
+      this.performanceMonitor.start()
     }
 
     navigator.mediaDevices
@@ -252,30 +259,16 @@ class UtteranceEmitter extends EventEmitter {
    * Process audio from the stream and monitor the volume, waveform, and frequency
    */
   processAudio(): void {
+    const frameStart = this.performanceMonitor?.recordFrameStart()
     console.log("Processing audio")
     if (!this.analysers) return
-    const levelAnalyser = this.analysers.volume
-    levelAnalyser.node.getByteFrequencyData(levelAnalyser.dataArray)
 
-    // calculate the average volume
-    let sum = 0
-    for (let i = 0; i < levelAnalyser.bufferLength; i++) {
-      sum += levelAnalyser.dataArray[i]
-    }
-    const average = sum / levelAnalyser.bufferLength
-
-    // Store the average volume volume
-    if (this.volumeData.length >= this.maxSignalPoints) {
-      this.volumeData.shift()
-    }
-    this.volumeData.push(average)
+    const average = this.calculateVolume()
+    this.updateVolumeHistory(average)
 
     // Store the threshold signal
     const thresholdSignal = average > this.volumeThreshold ? 1 : 0
-    if (this.thresholdSignalData.length >= this.maxSignalPoints) {
-      this.thresholdSignalData.shift()
-    }
-    this.thresholdSignalData.push(thresholdSignal)
+    this.updateThresholdHistory(thresholdSignal)
 
     // Calculate the speaking signal by filtering the threshold signal
     if (average > this.volumeThreshold) {
@@ -294,6 +287,52 @@ class UtteranceEmitter extends EventEmitter {
     // Store the speaking signal
     const speakingSignal = this.aboveThreshold ? 1 : 0
 
+    this.handleSpeakingEvents(speakingSignal)
+    this.updateSpeakingHistory(speakingSignal)
+    this.controlMediaRecorder(speakingSignal)
+
+    if (frameStart !== undefined) {
+      this.performanceMonitor?.recordFrameEnd(frameStart)
+    }
+
+    this.animationFrameId = requestAnimationFrame(this.processAudio.bind(this))
+  }
+
+  protected calculateVolume(): number {
+    if (!this.analysers) return 0
+    const levelAnalyser = this.analysers.volume
+    levelAnalyser.node.getByteFrequencyData(levelAnalyser.dataArray)
+
+    // calculate the average volume
+    let sum = 0
+    for (let i = 0; i < levelAnalyser.bufferLength; i++) {
+      sum += levelAnalyser.dataArray[i]
+    }
+    return sum / levelAnalyser.bufferLength
+  }
+
+  protected updateVolumeHistory(average: number): void {
+    if (this.volumeData.length >= this.maxSignalPoints) {
+      this.volumeData.shift()
+    }
+    this.volumeData.push(average)
+  }
+
+  protected updateThresholdHistory(signal: number): void {
+    if (this.thresholdSignalData.length >= this.maxSignalPoints) {
+      this.thresholdSignalData.shift()
+    }
+    this.thresholdSignalData.push(signal)
+  }
+
+  protected updateSpeakingHistory(signal: number): void {
+    if (this.speakingSignalData.length >= this.maxSignalPoints) {
+      this.speakingSignalData.shift()
+    }
+    this.speakingSignalData.push(signal)
+  }
+
+  protected handleSpeakingEvents(speakingSignal: number): void {
     // If the speaking state has changed from 0 to 1, emit the speaking event
     if (
       speakingSignal === 1 &&
@@ -314,12 +353,9 @@ class UtteranceEmitter extends EventEmitter {
       }
       this.emit("speaking", event)
     }
+  }
 
-    if (this.speakingSignalData.length >= this.maxSignalPoints) {
-      this.speakingSignalData.shift()
-    }
-    this.speakingSignalData.push(speakingSignal)
-
+  protected controlMediaRecorder(speakingSignal: number): void {
     // Start or stop recording based on filtered signal
     if (speakingSignal && this.mediaRecorder?.state === "inactive") {
       console.log("Starting media recorder")
@@ -328,8 +364,6 @@ class UtteranceEmitter extends EventEmitter {
       console.log("Stopping media recorder")
       this.mediaRecorder.stop()
     }
-
-    this.animationFrameId = requestAnimationFrame(this.processAudio.bind(this))
   }
 
   /**
@@ -405,6 +439,11 @@ class UtteranceEmitter extends EventEmitter {
       this.preRecordingMediaRecorder.state !== "inactive"
     ) {
       this.preRecordingMediaRecorder.stop()
+    }
+    if (this.performanceMonitor) {
+      const report = this.performanceMonitor.stop()
+      console.log(PerformanceMonitor.formatReport(report))
+      this.performanceMonitor = undefined
     }
   }
 
@@ -649,4 +688,4 @@ class UtteranceEmitter extends EventEmitter {
   }
 }
 
-export { UtteranceEmitter }
+export { UtteranceEmitter, PerformanceMonitor }

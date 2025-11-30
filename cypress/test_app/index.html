@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cypress Test App</title>
+    <script src="/dist/bundle.umd.js"></script>
+    <script>
+        // Expose modules to window for Cypress
+        window.UtteranceEmitter = MyLibrary.UtteranceEmitter;
+        window.PerformanceMonitor = MyLibrary.PerformanceMonitor;
+    </script>
+</head>
+<body>
+    <h1>Cypress Test App</h1>
+</body>
+</html>

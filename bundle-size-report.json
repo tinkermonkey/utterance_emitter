@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-11-30T12:42:55.937Z",
+  "bundles": {
+    "cjs": {
+      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.cjs.js",
+      "raw": 281027,
+      "gzip": 71280,
+      "rawFormatted": "274.44 KB",
+      "gzipFormatted": "69.61 KB"
+    },
+    "esm": {
+      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.esm.js",
+      "raw": 280965,
+      "gzip": 71258,
+      "rawFormatted": "274.38 KB",
+      "gzipFormatted": "69.59 KB"
+    },
+    "umd": {
+      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.umd.js",
+      "raw": 301678,
+      "gzip": 72277,
+      "rawFormatted": "294.61 KB",
+      "gzipFormatted": "70.58 KB"
+    }
+  },
+  "comparison": null
+}
