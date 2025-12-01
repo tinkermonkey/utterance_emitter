@@ -64,6 +64,13 @@
       const emitter = new UtteranceEmitter({
         emitRawAudio: true,
         emitMp3Audio: true,
+        vadConfig: {
+          positiveSpeechThreshold: 0.5,
+          minSpeechMs: 250,
+          preSpeechPadMs: 500,
+          // Point to local assets in dist folder
+          baseAssetPath: "./dist/"
+        },
         charts: {
           width: 200,
           height: 50,

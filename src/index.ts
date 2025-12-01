@@ -8,6 +8,8 @@ import {
 } from "./types"
 import { AudioAnalyser } from "./audio-analyser"
 import { EventEmitter } from "./event-emitter"
+import { PerformanceMonitor } from "./performance-monitor"
+import { createVADWrapper, VADWrapper } from "./vad-wrapper"
 
 const enablePreRecording = false
 const preRecordingChunkDuration = 10 // Duration in milliseconds for each audio chunks
@@ -51,10 +53,12 @@ class UtteranceEmitter extends EventEmitter {
   volumeThreshold: number = DEFAULT_VOLUME_THRESHOLD
   aboveThreshold: boolean = false
   belowThresholdDuration: number = 0
+  vadWrapper?: VADWrapper
+  vadSpeaking: boolean = false
 
   // Audio signal data
-  audioChunks: Float32Array[] = []
-  preRecordingChunks: Float32Array[] = []
+  audioChunks: Blob[] = []
+  preRecordingChunks: Blob[] = []
 
   // Processed signal data
   volumeData: number[] = []
@@ -78,6 +82,7 @@ class UtteranceEmitter extends EventEmitter {
   barWidth: number = DEFAULT_BAR_WIDTH
   barMargin: number = DEFAULT_BAR_MARGIN
   animationFrameId?: number
+  performanceMonitor?: PerformanceMonitor
 
   /**
    * Create a new UtteranceEmitter with the provided configuration
@@ -94,8 +99,28 @@ class UtteranceEmitter extends EventEmitter {
    * Initialize the audio context and any charts that are configured
    * Doesn't start recording audio, doesn't need to be called before start()
    */
-  init(): void {
+  async init(): Promise<void> {
     console.log("Initializing utterance emitter")
+
+    // Initialize VAD if configured
+    if (this.config.vadConfig) {
+      console.log("Initializing VAD with config:", this.config.vadConfig)
+      const wrapper = await createVADWrapper(this.config.vadConfig)
+      if (wrapper) {
+        this.vadWrapper = wrapper
+        
+        // Setup VAD event listeners
+        this.vadWrapper.onSpeechStart(() => {
+          console.log("VAD: Speech started")
+          this.vadSpeaking = true
+        })
+        
+        this.vadWrapper.onSpeechEnd(() => {
+          console.log("VAD: Speech ended")
+          this.vadSpeaking = false
+        })
+      }
+    }
 
     // If there are charts configured, initialize them
     if (this.config.charts) {
@@ -145,10 +170,20 @@ class UtteranceEmitter extends EventEmitter {
   /**
    * Start recording audio from the microphone and emitting utterances
    */
-  start(): void {
+  async start(): Promise<void> {
     console.log("Starting utterance emitter")
     if (!this.initialized) {
-      this.init()
+      await this.init()
+    }
+
+    if (this.config.enablePerformanceMonitoring) {
+      this.performanceMonitor = new PerformanceMonitor()
+      this.performanceMonitor.start()
+    }
+
+    // Start VAD if initialized
+    if (this.vadWrapper) {
+      await this.vadWrapper.start()
     }
 
     navigator.mediaDevices
@@ -195,8 +230,7 @@ class UtteranceEmitter extends EventEmitter {
     this.mediaRecorder = new MediaRecorder(stream)
 
     // Accumulate audio chunks as they come in
-    this.mediaRecorder.ondataavailable = (event) => {
-      // @ts-ignore
+    this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
       this.audioChunks.push(event.data)
     }
 
@@ -212,8 +246,7 @@ class UtteranceEmitter extends EventEmitter {
       this.preRecordingChunks = []
 
       // Keep some pre-recording buffer to better capture sharp rises in volume
-      this.preRecordingMediaRecorder.ondataavailable = (event) => {
-        // @ts-ignore
+      this.preRecordingMediaRecorder.ondataavailable = (event: BlobEvent) => {
         this.preRecordingChunks.push(event.data)
 
         // Limit the pre-recording buffer to the pre-recording duration
@@ -254,8 +287,56 @@ class UtteranceEmitter extends EventEmitter {
    * Process audio from the stream and monitor the volume, waveform, and frequency
    */
   processAudio(): void {
+    const frameStart = this.performanceMonitor?.recordFrameStart()
     console.log("Processing audio")
     if (!this.analysers) return
+
+    const average = this.calculateVolume()
+    this.updateVolumeHistory(average)
+
+    // Store the threshold signal
+    const thresholdSignal = average > this.volumeThreshold ? 1 : 0
+    this.updateThresholdHistory(thresholdSignal)
+
+    // Calculate the speaking signal
+    let speakingSignal = 0
+    
+    if (this.vadWrapper) {
+      // Use VAD state if available
+      speakingSignal = this.vadSpeaking ? 1 : 0
+    } else {
+      // Fallback to amplitude-based detection
+      if (average > this.volumeThreshold) {
+        this.aboveThreshold = true
+        this.belowThresholdDuration = 0
+      } else {
+        this.belowThresholdDuration += 16.67 // Approximate duration of one frame at 60 FPS
+        if (
+          this.belowThresholdDuration >=
+          (this.config.quietPeriod || DEFAULT_QUET_PERIOD)
+        ) {
+          this.aboveThreshold = false
+        }
+      }
+      speakingSignal = this.aboveThreshold ? 1 : 0
+    }
+
+    // Store the speaking signal
+    // const speakingSignal = this.aboveThreshold ? 1 : 0 // Removed old line
+
+    this.handleSpeakingEvents(speakingSignal)
+    this.updateSpeakingHistory(speakingSignal)
+    this.controlMediaRecorder(speakingSignal)
+
+    if (frameStart !== undefined) {
+      this.performanceMonitor?.recordFrameEnd(frameStart)
+    }
+
+    this.animationFrameId = requestAnimationFrame(this.processAudio.bind(this))
+  }
+
+  protected calculateVolume(): number {
+    if (!this.analysers) return 0
     const levelAnalyser = this.analysers.volume
     levelAnalyser.node.getByteFrequencyData(levelAnalyser.dataArray)
 
@@ -264,38 +345,31 @@ class UtteranceEmitter extends EventEmitter {
     for (let i = 0; i < levelAnalyser.bufferLength; i++) {
       sum += levelAnalyser.dataArray[i]
     }
-    const average = sum / levelAnalyser.bufferLength
+    return sum / levelAnalyser.bufferLength
+  }
 
-    // Store the average volume volume
+  protected updateVolumeHistory(average: number): void {
     if (this.volumeData.length >= this.maxSignalPoints) {
       this.volumeData.shift()
     }
     this.volumeData.push(average)
+  }
 
-    // Store the threshold signal
-    const thresholdSignal = average > this.volumeThreshold ? 1 : 0
+  protected updateThresholdHistory(signal: number): void {
     if (this.thresholdSignalData.length >= this.maxSignalPoints) {
       this.thresholdSignalData.shift()
     }
-    this.thresholdSignalData.push(thresholdSignal)
+    this.thresholdSignalData.push(signal)
+  }
 
-    // Calculate the speaking signal by filtering the threshold signal
-    if (average > this.volumeThreshold) {
-      this.aboveThreshold = true
-      this.belowThresholdDuration = 0
-    } else {
-      this.belowThresholdDuration += 16.67 // Approximate duration of one frame at 60 FPS
-      if (
-        this.belowThresholdDuration >=
-        (this.config.quietPeriod || DEFAULT_QUET_PERIOD)
-      ) {
-        this.aboveThreshold = false
-      }
+  protected updateSpeakingHistory(signal: number): void {
+    if (this.speakingSignalData.length >= this.maxSignalPoints) {
+      this.speakingSignalData.shift()
     }
+    this.speakingSignalData.push(signal)
+  }
 
-    // Store the speaking signal
-    const speakingSignal = this.aboveThreshold ? 1 : 0
-
+  protected handleSpeakingEvents(speakingSignal: number): void {
     // If the speaking state has changed from 0 to 1, emit the speaking event
     if (
       speakingSignal === 1 &&
@@ -316,12 +390,9 @@ class UtteranceEmitter extends EventEmitter {
       }
       this.emit("speaking", event)
     }
+  }
 
-    if (this.speakingSignalData.length >= this.maxSignalPoints) {
-      this.speakingSignalData.shift()
-    }
-    this.speakingSignalData.push(speakingSignal)
-
+  protected controlMediaRecorder(speakingSignal: number): void {
     // Start or stop recording based on filtered signal
     if (speakingSignal && this.mediaRecorder?.state === "inactive") {
       console.log("Starting media recorder")
@@ -330,8 +401,6 @@ class UtteranceEmitter extends EventEmitter {
       console.log("Stopping media recorder")
       this.mediaRecorder.stop()
     }
-
-    this.animationFrameId = requestAnimationFrame(this.processAudio.bind(this))
   }
 
   /**
@@ -391,6 +460,11 @@ class UtteranceEmitter extends EventEmitter {
   stop(): void {
     console.log("Stopping utterance emitter")
 
+    if (this.vadWrapper) {
+      this.vadWrapper.stop()
+      // Don't destroy here if we want to restart, but for now let's just stop
+    }
+
     if (this.audioContext) {
       this.audioContext.close()
       this.audioContext = undefined
@@ -407,6 +481,11 @@ class UtteranceEmitter extends EventEmitter {
       this.preRecordingMediaRecorder.state !== "inactive"
     ) {
       this.preRecordingMediaRecorder.stop()
+    }
+    if (this.performanceMonitor) {
+      const report = this.performanceMonitor.stop()
+      console.log(PerformanceMonitor.formatReport(report))
+      this.performanceMonitor = undefined
     }
   }
 
@@ -651,4 +730,4 @@ class UtteranceEmitter extends EventEmitter {
   }
 }
 
-export { UtteranceEmitter }
+export { UtteranceEmitter, PerformanceMonitor }

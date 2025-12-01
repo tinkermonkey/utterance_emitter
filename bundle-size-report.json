@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-11-30T14:14:32.866Z",
+  "bundles": {
+    "cjs": {
+      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.cjs.js",
+      "raw": 757382,
+      "gzip": 196812,
+      "rawFormatted": "739.63 KB",
+      "gzipFormatted": "192.2 KB"
+    },
+    "esm": {
+      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.esm.js",
+      "raw": 757291,
+      "gzip": 196783,
+      "rawFormatted": "739.54 KB",
+      "gzipFormatted": "192.17 KB"
+    },
+    "umd": {
+      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.umd.js",
+      "raw": 781563,
+      "gzip": 197979,
+      "rawFormatted": "763.25 KB",
+      "gzipFormatted": "193.34 KB"
+    }
+  },
+  "comparison": {
+    "timestamp": "2025-11-30T14:14:32.865Z",
+    "bundles": {
+      "cjs": {
+        "rawDiff": 476355,
+        "gzipDiff": 125532,
+        "rawDiffFormatted": "465.19 KB",
+        "gzipDiffFormatted": "122.59 KB",
+        "rawPercent": "169.51",
+        "gzipPercent": "176.11"
+      },
+      "esm": {
+        "rawDiff": 476326,
+        "gzipDiff": 125525,
+        "rawDiffFormatted": "465.16 KB",
+        "gzipDiffFormatted": "122.58 KB",
+        "rawPercent": "169.53",
+        "gzipPercent": "176.16"
+      },
+      "umd": {
+        "rawDiff": 479885,
+        "gzipDiff": 125702,
+        "rawDiffFormatted": "468.64 KB",
+        "gzipDiffFormatted": "122.76 KB",
+        "rawPercent": "159.07",
+        "gzipPercent": "173.92"
+      }
+    },
+    "total": {
+      "rawDiff": 1432566,
+      "gzipDiff": 376759,
+      "rawPercent": "165.87",
+      "gzipPercent": "175.39"
+    }
+  }
+}

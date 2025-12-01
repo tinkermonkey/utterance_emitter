@@ -1,3 +1,5 @@
+import { VADWrapperConfig } from "./vad-wrapper";
+
 /**
  * Configuration options for the Emitter class.
  */
@@ -11,6 +13,8 @@ export interface EmitterConfig {
   sampleRate?: number; // The sample rate to use for audio recording
   mp3BitRate?: number; // The bit rate to use for MP3 encoding
   quietPeriod?: number; // Duration in milliseconds of below threshold audio to wait before stopping recording
+  vadConfig?: VADWrapperConfig; // Configuration for VAD (Voice Activity Detection)
+  enablePerformanceMonitoring?: boolean; // Whether to enable performance monitoring
   charts?:{
     width?: number;
     height?: number;
