@@ -4,9 +4,7 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/tinkermonkey/utterance_emitter/badge.svg)](https://snyk.io/test/github/tinkermonkey/utterance_emitter)
 [![npm version](https://badge.fury.io/js/@tinkermonkey%2Futterance-emitter.svg)](https://badge.fury.io/js/@tinkermonkey%2Futterance-emitter)
 
-Utterance Emitter is a library for recording audio in the browser, performing speaker detection, and emitting chunks of mp3 encoded audio representing utterances for further processing.
-
-This has been kept deliberately simple with minimal dependencies, if you're looking for extensibility that doesn't exist in order to enable more elaborate use cases, put up an MR.
+Utterance Emitter is a library for recording audio in the browser, performing speaker detection, and emitting chunks of mp3 encoded audio representing utterances for further processing with tools like Whisper.
 
 ## Installation
 
