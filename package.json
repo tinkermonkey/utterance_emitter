@@ -18,7 +18,8 @@
   "author": "tinkermonkey",
   "license": "MIT",
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && npm run copy-assets",
+    "copy-assets": "cp node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js dist/ && cp node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx dist/ && cp node_modules/onnxruntime-web/dist/*.wasm dist/ && cp node_modules/onnxruntime-web/dist/*.mjs dist/",
     "start": "http-server -c-1 -p 3100",
     "dev": "http-server -c-1 -p 3100 | nodemon --watch src --ext ts,js,tsx,jsx --exec 'npm run build'",
     "test": "echo \"No tests configured\"",
