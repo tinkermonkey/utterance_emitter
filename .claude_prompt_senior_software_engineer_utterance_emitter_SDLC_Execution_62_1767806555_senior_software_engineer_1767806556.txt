@@ -1,0 +1,314 @@
+
+You are a Senior Software Engineer.
+
+I implement clean, well thought out code with proper error handling and maintainable architecture.
+
+**Issue Title**: Phase 1: Fix TypeScript 5.7+ compilation errors with explicit Uint8Array buffer types
+
+**Description**:
+Update TypeScript type annotations to explicitly specify `Uint8Array<ArrayBuffer>` instead of relying on the default `Uint8Array<ArrayBufferLike>` type. This resolves compilation errors introduced by TypeScript 5.7+ breaking changes where Web Audio API methods and the Blob constructor require `ArrayBuffer`-backed typed arrays.
+
+## Requirements
+- The project must compile without TypeScript errors when using TypeScript 5.7.3 or later (FR-1)
+- `AnalyserNode.getByteFrequencyData()` must accept `levelAnalyser.dataArray` without type errors at `src/index.ts:341`
+- `AnalyserNode.getByteTimeDomainData()` must accept `audioAnalyser.dataArray` without type errors at `src/index.ts:500`
+- `AnalyserNode.getByteFrequencyData()` must accept `audioAnalyser.dataArray` without type errors at `src/index.ts:558`
+- `Blob` constructor must accept `mp3Data` array without type errors at `src/index.ts:729`
+- Type declarations must maintain semantic correctness aligning with Web Audio API and Blob API specifications (FR-3)
+- Type safety must be preserved without runtime behavior changes
+
+## Design Guidance
+**TypeScript 5.7+ Breaking Change Context**:
+In TypeScript 5.7+, `Uint8Array` became generic over `ArrayBufferLike`:
+```typescript
+// TypeScript 5.7+ default
+Uint8Array<ArrayBufferLike>  // Can be ArrayBuffer OR SharedArrayBuffer
+
+// Web Audio API requirement (lib.dom.d.ts)
+interface AnalyserNode {
+  getByteFrequencyData(array: Uint8Array<ArrayBuffer>): void;
+  getByteTimeDomainData(array: Uint8Array<ArrayBuffer>): void;
+}
+
+// Blob API requirement
+type BlobPart = BufferSource | Blob | string;
+type BufferSource = ArrayBufferView<ArrayBuffer> | ArrayBuffer;
+```
+
+**File 1: `src/audio-analyser.ts`**
+
+Location: Line 4 (property declaration) and Line 11 (initialization)
+
+Current code structure:
+```typescript
+export default class AudioAnalyser {
+  node: AnalyserNode
+  fftSize: number
+  dataArray: Uint8Array  // ← Line 4: Change this
+
+  constructor (node: AnalyserNode, fftSize: number = 2048) {
+    this.node = node
+    this.fftSize = fftSize
+    this.node.fftSize = fftSize
+    this.dataArray = new Uint8Array(this.node.frequencyBinCount)  // ← Line 11: Already correct at runtime
+  }
+}
+```
+
+**Required change**:
+```typescript
+dataArray: Uint8Array<ArrayBuffer>
+```
+
+**Rationale**: The `AudioAnalyser` class is instantiated three times in `src/index.ts` for volume, waveform, and frequency analysis. All three instances pass `dataArray` to `AnalyserNode` methods that require `Uint8Array<ArrayBuffer>`. The runtime behavior is already correct since `new Uint8Array()` creates an `ArrayBuffer`-backed array; this change only adds explicit type information.
+
+**File 2: `src/index.ts`**
+
+Location: Line 718 in the `encodeMP3()` method
+
+Current code structure:
+```typescript
+private encodeMP3(): void {
+  const mp3Encoder = new Mp3Encoder(this.numberOfChannels, this.sampleRate, this.mp3BitRate)
+  const mp3Data = []  // ← Line 718: Change this
+
+  const sampleBlockSize = 1152
+
+  for (let i = 0; i < this.sampleData.length; i += sampleBlockSize) {
+    // ... encoding logic ...
+    const mp3buf = mp3Encoder.encodeBuffer(sampleChunk)
+    if (mp3buf.length > 0) {
+      mp3Data.push(mp3buf)  // mp3buf is Uint8Array
+    }
+  }
+
+  const finalMp3buf = mp3Encoder.flush()
+  if (finalMp3buf.length > 0) {
+    mp3Data.push(finalMp3buf)
+  }
+
+  this.blob = new Blob(mp3Data, { type: "audio/mp3" })  // ← Line 729: Blob constructor requires BlobPart[]
+}
+```
+
+**Required change**:
+```typescript
+const mp3Data: Uint8Array<ArrayBuffer>[] = []
+```
+
+**Rationale**: The `Mp3Encoder.encodeBuffer()` and `Mp3Encoder.flush()` methods return `Uint8Array` instances that are accumulated in `mp3Data`. The Blob constructor's `BlobPart[]` type requires typed arrays to be explicitly `ArrayBuffer`-backed. This annotation ensures type compatibility.
+
+**Implementation Notes**:
+- These are type annotation changes only - no runtime behavior changes
+- The `new Uint8Array()` constructor already creates `ArrayBuffer`-backed arrays by default
+- Backward compatibility is maintained via TypeScript's structural typing
+- Do NOT use type assertions (`as any`, `as unknown`) - explicit type annotations are the correct solution
+
+## Acceptance Criteria
+- [ ] `src/audio-analyser.ts:4` declares `dataArray: Uint8Array<ArrayBuffer>`
+- [ ] `src/index.ts:718` declares `const mp3Data: Uint8Array<ArrayBuffer>[] = []`
+- [ ] `npm run build` completes successfully with exit code 0
+- [ ] No TypeScript compilation errors are reported for `src/audio-analyser.ts`
+- [ ] No TypeScript compilation errors are reported for `src/index.ts:341` (getByteFrequencyData)
+- [ ] No TypeScript compilation errors are reported for `src/index.ts:500` (getByteTimeDomainData)
+- [ ] No TypeScript compilation errors are reported for `src/index.ts:558` (getByteFrequencyData)
+- [ ] No TypeScript compilation errors are reported for `src/index.ts:729` (Blob constructor)
+- [ ] The `dist/` directory contains compiled output files after build
+- [ ] Code is reviewed and approved
+
+## Parent Issue
+Part of #60
+
+## Discussion
+This work is detailed in discussion [61](https://github.com/tinkermonkey/utterance_emitter/discussions/61)
+
+---
+
+
+## Previous Work and Feedback
+
+The following is the complete history of agent outputs and feedback for this issue.
+This includes outputs from ALL previous stages (design, testing, QA, etc.) and any
+user feedback. If this issue was returned from testing or QA, pay special attention
+to their feedback and address all issues they identified.
+
+## Output from Software Architect
+
+**software_architect** (agent):
+# Architecture Design
+
+---
+
+## Executive Summary
+
+The CI pipeline fails due to TypeScript 5.7+ breaking changes that made `Uint8Array` generic over its underlying buffer type. Four compilation errors in `src/audio-analyser.ts` and `src/index.ts` result from type incompatibilities between `Uint8Array<ArrayBufferLike>` (the default) and `Uint8Array<ArrayBuffer>` (required by Web Audio API and Blob APIs). Additionally, there is a dependency version mismatch where `@rollup/plugin-commonjs@29.0.0` is installed but `package.json` declares `^28.0.2`.
+
+## System Architecture
+
+### Current Build Pipeline
+
+```
+Source Files (src/*.ts)
+        │
+        ▼
+┌─────────────────────────────────────────────────┐
+│  Rollup Build Pipeline                          │
+│  ┌─────────────────────────────────────────────┐│
+│  │  @rollup/plugin-typescript                  ││
+│  │  (TypeScript 5.9.3 compilation)             ││
+│  └─────────────────────────────────────────────┘│
+│  ┌─────────────────────────────────────────────┐│
+│  │  @rollup/plugin-node-resolve                ││
+│  │  @rollup/plugin-commonjs                    ││
+│  └─────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────┘
+        │
+        ▼
+    dist/ outputs (cjs, esm, umd bundles + type declarations)
+        │
+        ▼
+    CI Test Steps (Cypress e2e)
+```
+
+### Type Error Locations
+
+| File | Line | Method | Issue |
+|------|------|--------|-------|
+| `src/index.ts` | 341 | `getByteFrequencyData()` | `Uint8Array<ArrayBufferLike>` vs `Uint8Array<ArrayBuffer>` |
+| `src/index.ts` | 500 | `getByteTimeDomainData()` | `Uint8Array<ArrayBufferLike>` vs `Uint8Array<ArrayBuffer>` |
+| `src/index.ts` | 558 | `getByteFrequencyData()` | `Uint8Array<ArrayBufferLike>` vs `Uint8Array<ArrayBuffer>` |
+| `src/index.ts` | 729 | `new Blob()` | `Uint8Array<ArrayBufferLike>[]` vs `BlobPart[]` |
+
+## Established Patterns
+
+The codebase uses a single `AudioAnalyser` class (`src/audio-analyser.ts:1-13`) that wraps Web Audio API's `AnalyserNode`. This class:
+- Holds a `dataArray: Uint8Array` property used for frequency/time-domain data retrieval
+- Is instantiated multiple times for different analysis purposes (volume, waveform, frequency)
+
+The MP3 encoding path in `encodeMP3()` (`src/index.ts:702-730`) accumulates encoded chunks in an untyped array that gets passed to the Blob constructor.
+
+## Scalability Design
+
+This is a targeted fix with no architectural changes required. The solution must:
+
+1. **Maintain backward compatibility** with TypeScript 5.6 and earlier for library consumers
+2. **Preserve runtime behavior** - the fix is purely a compile-time type annotation change
+3. **Minimize diff surface** - changes should be limited to type annotations only
+
+## Component Reuse
+
+The fix affects the shared `AudioAnalyser` class which is used in three contexts:
+- `analysers.volume` - for volume level monitoring
+- `analysers.waveform` - for waveform visualization  
+- `analysers.frequency` - for frequency spectrum visualization
+
+A single change to `AudioAnalyser.dataArray` type annotation will resolve all three usage sites in `src/index.ts`.
+
+## Implementation Plan
+
+### Phase 1: Fix TypeScript Type Annotations
+
+**1.1 Update `AudioAnalyser.dataArray` type annotation**
+
+Location: `src/audio-analyser.ts:4`
+
+Change from:
+```typescript
+dataArray: Uint8Array;
+```
+
+To:
+```typescript
+dataArray: Uint8Array<ArrayBuffer>;
+```
+
+This explicitly constrains the buffer type to `ArrayBuffer` (not `SharedArrayBuffer`), matching what Web Audio API methods expect.
+
+**1.2 Update `encodeMP3()` array type annotation**
+
+Location: `src/index.ts:718`
+
+Change from:
+```typescript
+const mp3Data = []
+```
+
+To:
+```typescript
+const mp3Data: Uint8Array<ArrayBuffer>[] = []
+```
+
+This ensures the Blob constructor receives the correct typed array.
+
+### Phase 2: Update Dependency Constraints
+
+**2.1 Update `package.json` dependency version**
+
+Location: `package.json:30`
+
+Change from:
+```json
+"@rollup/plugin-commonjs": "^28.0.2",
+```
+
+To:
+```json
+"@rollup/plugin-commonjs": "^29.0.0",
+```
+
+This aligns the declared constraint with the installed version, eliminating the `npm ls` warning.
+
+### Phase 3: Verification
+
+**3.1 Run build locally**
+```bash
+npm run build
+```
+
+**3.2 Run e2e tests locally (if environment supports)**
+```bash
+npm run test:e2e
+```
+
+## Technical Rationale
+
+### Why explicit `Uint8Array<ArrayBuffer>` is correct
+
+The Web Audio API methods `getByteFrequencyData()` and `getByteTimeDomainData()` operate on typed arrays backed by regular `ArrayBuffer`, not `SharedArrayBuffer`. The TypeScript 5.7+ lib.dom.d.ts types were updated to reflect this:
+
+```typescript
+// In lib.dom.d.ts (TypeScript 5.7+)
+interface AnalyserNode {
+  getByteFrequencyData(array: Uint8Array<ArrayBuffer>): void;
+  getByteTimeDomainData(array: Uint8Array<ArrayBuffer>): void;
+}
+```
+
+Similarly, the Blob constructor's `BlobPart` type now expects `ArrayBufferView<ArrayBuffer>`.
+
+### Why this maintains backward compatibility
+
+TypeScript's variance rules allow `Uint8Array<ArrayBuffer>` (more specific) to be used where `Uint8Array<ArrayBufferLike>` (less specific) is expected when reading. Library consumers using older TypeScript versions will simply ignore the generic parameter due to structural typing.
+
+### Alternative approaches considered and rejected
+
+1. **Using `as any` or `as unknown` casts**: Reduces type safety, hides potential issues
+2. **Downgrading TypeScript to 5.6**: Blocks access to newer TypeScript features and violates declared version constraint
+3. **Using `skipLibCheck: true`**: Masks errors rather than fixing them, may hide other legitimate issues
+4. **Creating runtime conversions**: Unnecessary overhead since `new Uint8Array()` already uses `ArrayBuffer`
+
+## Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Breaking older TypeScript consumers | Low | Medium | Generic parameters are backward-compatible via structural typing |
+| Runtime behavior change | None | None | Changes are type annotations only |
+| Dependency incompatibility | Low | Low | `@rollup/plugin-commonjs@29.0.0` is already installed and working |
+
+---
+_Generated by Orchestrator Bot 🤖_
+_Processed by the software_architect agent_
+
+IMPORTANT: Review all feedback carefully and address every issue that is not already addressed.
+
+

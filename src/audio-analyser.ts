@@ -1,7 +1,7 @@
 export class AudioAnalyser {
   fftSize?: number;
   bufferLength: number;
-  dataArray: Uint8Array;
+  dataArray: Uint8Array<ArrayBuffer>;
   node: AnalyserNode;
 
   constructor(context: AudioContext, source: MediaStreamAudioSourceNode, fftSize?: number) {
