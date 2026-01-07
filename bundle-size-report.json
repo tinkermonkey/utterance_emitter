@@ -1,61 +1,61 @@
 {
-  "timestamp": "2025-11-30T14:14:32.866Z",
+  "timestamp": "2026-01-07T17:49:15.674Z",
   "bundles": {
     "cjs": {
-      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.cjs.js",
-      "raw": 757382,
-      "gzip": 196812,
-      "rawFormatted": "739.63 KB",
-      "gzipFormatted": "192.2 KB"
+      "path": "/workspace/dist/bundle.cjs.js",
+      "raw": 757724,
+      "gzip": 196941,
+      "rawFormatted": "739.96 KB",
+      "gzipFormatted": "192.33 KB"
     },
     "esm": {
-      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.esm.js",
-      "raw": 757291,
-      "gzip": 196783,
-      "rawFormatted": "739.54 KB",
-      "gzipFormatted": "192.17 KB"
+      "path": "/workspace/dist/bundle.esm.js",
+      "raw": 757633,
+      "gzip": 196913,
+      "rawFormatted": "739.88 KB",
+      "gzipFormatted": "192.3 KB"
     },
     "umd": {
-      "path": "/Users/austinsand/workspace/utterance_emitter/dist/bundle.umd.js",
-      "raw": 781563,
-      "gzip": 197979,
-      "rawFormatted": "763.25 KB",
-      "gzipFormatted": "193.34 KB"
+      "path": "/workspace/dist/bundle.umd.js",
+      "raw": 781917,
+      "gzip": 198103,
+      "rawFormatted": "763.59 KB",
+      "gzipFormatted": "193.46 KB"
     }
   },
   "comparison": {
-    "timestamp": "2025-11-30T14:14:32.865Z",
+    "timestamp": "2026-01-07T17:49:15.674Z",
     "bundles": {
       "cjs": {
-        "rawDiff": 476355,
-        "gzipDiff": 125532,
-        "rawDiffFormatted": "465.19 KB",
-        "gzipDiffFormatted": "122.59 KB",
-        "rawPercent": "169.51",
-        "gzipPercent": "176.11"
+        "rawDiff": 0,
+        "gzipDiff": 0,
+        "rawDiffFormatted": "0 Bytes",
+        "gzipDiffFormatted": "0 Bytes",
+        "rawPercent": "0.00",
+        "gzipPercent": "0.00"
       },
       "esm": {
-        "rawDiff": 476326,
-        "gzipDiff": 125525,
-        "rawDiffFormatted": "465.16 KB",
-        "gzipDiffFormatted": "122.58 KB",
-        "rawPercent": "169.53",
-        "gzipPercent": "176.16"
+        "rawDiff": 0,
+        "gzipDiff": 0,
+        "rawDiffFormatted": "0 Bytes",
+        "gzipDiffFormatted": "0 Bytes",
+        "rawPercent": "0.00",
+        "gzipPercent": "0.00"
       },
       "umd": {
-        "rawDiff": 479885,
-        "gzipDiff": 125702,
-        "rawDiffFormatted": "468.64 KB",
-        "gzipDiffFormatted": "122.76 KB",
-        "rawPercent": "159.07",
-        "gzipPercent": "173.92"
+        "rawDiff": 0,
+        "gzipDiff": 0,
+        "rawDiffFormatted": "0 Bytes",
+        "gzipDiffFormatted": "0 Bytes",
+        "rawPercent": "0.00",
+        "gzipPercent": "0.00"
       }
     },
     "total": {
-      "rawDiff": 1432566,
-      "gzipDiff": 376759,
-      "rawPercent": "165.87",
-      "gzipPercent": "175.39"
+      "rawDiff": 0,
+      "gzipDiff": 0,
+      "rawPercent": "0.00",
+      "gzipPercent": "0.00"
     }
   }
 }
