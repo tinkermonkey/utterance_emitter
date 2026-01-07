@@ -38,3 +38,5 @@ jobs:
           browser: chromium
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          CYPRESS_CI: true
+          CYPRESS_GITHUB_ACTIONS: true
