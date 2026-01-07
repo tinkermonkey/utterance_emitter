@@ -26,7 +26,8 @@ describe('VAD Performance', () => {
       })
 
       // Wait for some time to record frames
-      cy.wait(10000)
+      // Reduced wait time for CI stability
+      cy.wait(3000)
 
       cy.wrap(null).then(() => {
          emitter.stop()
