@@ -321,9 +321,6 @@ class UtteranceEmitter extends EventEmitter {
       speakingSignal = this.aboveThreshold ? 1 : 0
     }
 
-    // Store the speaking signal
-    // const speakingSignal = this.aboveThreshold ? 1 : 0 // Removed old line
-
     this.handleSpeakingEvents(speakingSignal)
     this.updateSpeakingHistory(speakingSignal)
     this.controlMediaRecorder(speakingSignal)
