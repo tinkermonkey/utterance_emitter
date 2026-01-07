@@ -5,7 +5,13 @@ import puppeteer from 'puppeteer';
   try {
     browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-print-preview',
+        '--disable-printing',
+        '--disable-dev-shm-usage'
+      ]
     });
 
     const page = await browser.newPage();
