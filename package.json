@@ -27,7 +27,7 @@
     "test:bundle-size": "npm run build && node scripts/measure-bundle-size.js"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-typescript": "^12.1.2",
     "cypress": "^14.0.2",
@@ -37,7 +37,7 @@
     "nodemon": "^3.1.9",
     "puppeteer": "^24.2.0",
     "rollup": "^4.40.1",
-    "ts-jest": "^29.2.5",
+    "ts-jest": "^29.4.6",
     "tslib": "2.8.1",
     "typescript": "^5.7.3",
     "web-audio-test-api": "^0.5.2"

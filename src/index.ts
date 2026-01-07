@@ -321,9 +321,6 @@ class UtteranceEmitter extends EventEmitter {
       speakingSignal = this.aboveThreshold ? 1 : 0
     }
 
-    // Store the speaking signal
-    // const speakingSignal = this.aboveThreshold ? 1 : 0 // Removed old line
-
     this.handleSpeakingEvents(speakingSignal)
     this.updateSpeakingHistory(speakingSignal)
     this.controlMediaRecorder(speakingSignal)
@@ -715,15 +712,20 @@ class UtteranceEmitter extends EventEmitter {
     const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, kbps)
     const sampleBlockSize = 1152
     let sampleChunk
-    const mp3Data = []
+    const mp3Data: Uint8Array<ArrayBuffer>[] = []
 
     // encode mp3
     for (let i = 0; i < samples.length; i += sampleBlockSize) {
       sampleChunk = samples.subarray(i, i + sampleBlockSize)
       const mp3buf = mp3encoder.encodeBuffer(sampleChunk)
       if (mp3buf.length > 0) {
-        mp3Data.push(mp3buf)
+        mp3Data.push(mp3buf as Uint8Array<ArrayBuffer>)
       }
+    }
+
+    const finalMp3buf = mp3encoder.flush()
+    if (finalMp3buf.length > 0) {
+      mp3Data.push(finalMp3buf as Uint8Array<ArrayBuffer>)
     }
 
     return new Blob(mp3Data, { type: "audio/mp3" })
