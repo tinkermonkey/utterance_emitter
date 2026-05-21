@@ -23,6 +23,15 @@ export default {
       sourcemap: true,
     },
   ],
+  external: [
+    // Exclude onnxruntime-web and its dependencies (including protobufjs) from bundle
+    'onnxruntime-web',
+    'onnxruntime-common',
+    'protobufjs',
+    /^@protobufjs\//,
+    'flatbuffers',
+    'long'
+  ],
   plugins: [
     resolve(), // Resolve node_modules
     commonjs(), // Convert CommonJS modules to ES6
