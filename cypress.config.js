@@ -1,7 +1,10 @@
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { defineConfig } from 'cypress'
 import * as dotenv from 'dotenv'
 dotenv.config()
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const shortAudioFile = 'cypress/test_data/hello.wav'
 
@@ -30,8 +33,8 @@ export default defineConfig({
           launchOptions.args.push('--use-fake-ui-for-media-stream')
           launchOptions.args.push('--use-fake-device-for-media-stream')
           launchOptions.args.push('--enable-features=SharedArrayBuffer')
-          //launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(import.meta.dirname, currentAudioFile)}%%noloop`)
-          launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(import.meta.dirname, shortAudioFile)}`)
+          //launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(__dirname, currentAudioFile)}%%noloop`)
+          launchOptions.args.push(`--use-file-for-fake-audio-capture=${path.resolve(__dirname, shortAudioFile)}`)
         }
         return launchOptions
       })
